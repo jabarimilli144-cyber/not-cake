@@ -308,6 +308,7 @@ footer { padding-block: 1rem 3rem; }
       <div class="field"><label for="f-steps">Steps</label><textarea id="f-steps" placeholder="Heat oven to 350 °F.&#10;Mix cake mix and eggs…"></textarea><small>One step per line, in order.</small></div>
       <div class="field"><label for="f-tip">Tip (optional)</label><input id="f-tip" maxlength="200"></div>
       <div class="field"><label for="f-by">Your name</label><input id="f-by" maxlength="40" placeholder="Shown on the recipe if it's approved"></div>
+      <div hidden aria-hidden="true"><label for="f-website">Leave this empty</label><input id="f-website" tabindex="-1" autocomplete="off"></div>
       <div class="form-foot"><button class="btn" type="submit" id="f-submit">Send for review</button><span class="msg" id="f-msg" role="status"></span></div>
     </form>
     <aside class="panel" aria-labelledby="mine-title">
@@ -453,7 +454,6 @@ function clean(d, id) {
 
 let community = [];
 let db = null, uid = null, owner = false, unlocked = false, reviewSub = null, pending = [], mineItems = {};
-try { unlocked = sessionStorage.getItem("notcake-unlocked") === "1"; } catch {}
 
 function cardHTML(r, actions = "") {
   return `
@@ -487,7 +487,7 @@ function render() {
     : "All recipes";
   $("count").textContent = `${list.length} of ${all.length}`;
   $("clear").hidden = !filtered;
-  const canRemove = owner && unlocked && db;
+  const canRemove = unlocked && (window.claude?.use ? owner && db : true);
   $("grid").innerHTML = list.length ? list.map(r => cardHTML(r,
       r.community && canRemove ? `<div class="actions"><button class="mini danger" type="button" data-remove="${esc(r.id)}">Remove from site</button></div>` : "")).join("")
     : `<div class="empty"><p>No recipes match that combination.</p><button class="btn ghost" type="button" onclick="document.getElementById('clear').click()">Clear filters</button></div>`;
@@ -518,34 +518,56 @@ $("shelf").innerHTML = MIXES.map(m => `
 
 render();
 
-// Suggestions need claude.ai's shared database. Hosted anywhere else, hide them.
-if (!window.claude?.use) {
-  ["suggest", "owner-link"].forEach(id => { $(id).hidden = true; });
-  document.querySelectorAll('a[href="#suggest"]').forEach(a => { a.hidden = true; });
-}
-
 /* ---------- Suggestions and review ---------- */
-// Only the SHA-256 of the code ships with the page. The real lock is the database rule:
-// only the page owner's account can write approved recipes.
+// Two backends. As a claude.ai artifact the page uses claude.ai's shared database, and only the
+// owner's account can approve. Hosted on Vercel it uses this site's /api functions, which check
+// the approval code on the server.
+const ON_CLAUDE = !!window.claude?.use;
+// claude.ai mode only: just the SHA-256 of the code ships with the page; the database rule is the real lock.
 const CODE_HASH = "e010fd1ce1acc173e3b4835b7635f8d4600d774869102adb5cb7b5d7895649ba";
 async function sha256(s) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
   return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
 }
-const cap = n => window.claude?.use ? Promise.resolve(window.claude.use(n)).catch(() => null) : Promise.resolve(null);
+const cap = n => ON_CLAUDE ? Promise.resolve(window.claude.use(n)).catch(() => null) : Promise.resolve(null);
 const msg = (id, text, kind = "") => { const el = $(id); el.textContent = text; el.className = "msg" + (kind ? " " + kind : ""); };
+const store = (kind, key, val) => { try { const s = kind === "session" ? sessionStorage : localStorage; if (val === undefined) return s.getItem(key); if (val === null) s.removeItem(key); else s.setItem(key, val); } catch { return null; } };
 
 $("f-flavor").innerHTML = Object.entries(FLAVORS).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
 $("f-type").innerHTML = Object.entries(TYPES).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
 
+function hideSuggestions() {
+  ["suggest", "owner-link", "review"].forEach(id => { $(id).hidden = true; });
+  document.querySelectorAll('a[href="#suggest"]').forEach(a => { a.hidden = true; });
+}
+
 const STATUS = { pending: "Waiting for review", approved: "Approved", declined: "Not added" };
-function renderMine() {
-  const items = Object.values(mineItems).filter(i => i && i.name).sort((a, b) => (b.at || 0) - (a.at || 0));
+function renderMine(items) {
+  items = items.filter(i => i && i.name).sort((a, b) => (b.at || 0) - (a.at || 0));
   $("mine").innerHTML = items.length
     ? items.map(i => { const s = STATUS[i.status] ? i.status : "pending";
         return `<div class="mine-item"><span>${esc(str(i.name, 80))}</span><span class="status ${s}">${STATUS[s]}</span></div>`; }).join("")
     : `<p class="msg">Nothing sent yet. What you send shows up here with its review status.</p>`;
 }
+function setCommunity(rows) {
+  community = rows.map(x => clean(x, x.id)).filter(r => r.ing.length && r.steps.length);
+  render();
+}
+
+/* Vercel backend */
+async function apiCall(path, body, code) {
+  const opts = body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : {};
+  if (code) opts.headers = { ...opts.headers, "x-approval-code": code };
+  const r = await fetch("/api/" + path, opts);
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw Object.assign(new Error(data.error || "Request failed"), { status: r.status });
+  return data;
+}
+let mineIds = [];
+try { mineIds = JSON.parse(store("local", "notcake-mine") || "[]").filter(x => typeof x === "string").slice(0, 20); } catch {}
+const loadApproved = () => apiCall("recipes").then(d => setCommunity(d.recipes || []));
+const loadMine = () => mineIds.length ? apiCall("status?ids=" + mineIds.join(",")).then(d => renderMine(d.items || [])) : Promise.resolve(renderMine([]));
+let reviewCode = ON_CLAUDE ? null : store("session", "notcake-code");
 
 $("suggest-form").addEventListener("submit", async e => {
   e.preventDefault();
@@ -554,26 +576,35 @@ $("suggest-form").addEventListener("submit", async e => {
   const item = {
     name: v("f-name"), flavor: v("f-flavor"), type: v("f-type"), time: v("f-time"), yield: v("f-yield"), temp: v("f-temp"),
     blurb: v("f-blurb"), ing: toLines("f-ing"), steps: toLines("f-steps"), tip: v("f-tip"), by: v("f-by"),
-    status: "pending", at: Date.now(),
   };
   if (!item.name) return msg("f-msg", "Give the recipe a name.", "err"), $("f-name").focus();
   if (item.ing.length < 2) return msg("f-msg", "Add at least two ingredients, one per line.", "err"), $("f-ing").focus();
   if (!item.steps.length) return msg("f-msg", "Add the steps, one per line.", "err"), $("f-steps").focus();
-  if (!db || !uid) return msg("f-msg", "Sign in to claude.ai and open this page from its link to send suggestions.", "err");
+  if (ON_CLAUDE && (!db || !uid)) return msg("f-msg", "Sign in to claude.ai and open this page from its link to send suggestions.", "err");
 
-  const rid = "r" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  const ref = db.doc("pending/" + uid);
   $("f-submit").disabled = true; msg("f-msg", "Sending…");
   try {
-    const snap = await ref.get();
-    if (snap.exists) await ref.update({ items: { [rid]: item } });
-    else await ref.set({ items: { [rid]: item } });
+    if (ON_CLAUDE) {
+      const rid = "r" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      const ref = db.doc("pending/" + uid);
+      const full = { ...item, status: "pending", at: Date.now() };
+      const snap = await ref.get();
+      if (snap.exists) await ref.update({ items: { [rid]: full } });
+      else await ref.set({ items: { [rid]: full } });
+    } else {
+      const d = await apiCall("suggest", { ...item, website: $("f-website").value });
+      mineIds = [d.id, ...mineIds.filter(x => x !== d.id)].slice(0, 20);
+      store("local", "notcake-mine", JSON.stringify(mineIds));
+      loadMine().catch(() => {});
+    }
     $("suggest-form").reset();
     msg("f-msg", "Sent. It's waiting for review.", "ok");
   } catch (err) {
-    msg("f-msg", err?.code === "invalid_argument"
-      ? "You can view this page but not add to it. Ask the owner to share it with you as a Contributor."
-      : err?.code === "quota_exceeded" ? "The suggestion box is full right now. Try again after some are reviewed."
+    msg("f-msg",
+      err?.code === "invalid_argument" ? "You can view this page but not add to it. Ask the owner to share it with you as a Contributor."
+      : err?.code === "quota_exceeded" || err?.status === 507 ? "The suggestion box is full right now. Try again after some are reviewed."
+      : err?.status === 429 ? "You've sent several suggestions already. Try again in an hour."
+      : err?.status === 400 ? err.message
       : "Couldn't send. Check your connection and try again.", "err");
   } finally { $("f-submit").disabled = false; }
 });
@@ -587,10 +618,23 @@ $("owner-link").addEventListener("click", openReview);
 
 $("lock-form").addEventListener("submit", async e => {
   e.preventDefault();
-  if (await sha256($("code").value.trim().toLowerCase()) !== CODE_HASH) return msg("lock-msg", "That code doesn't match.", "err");
+  const code = $("code").value.trim();
+  if (ON_CLAUDE) {
+    if (await sha256(code.toLowerCase()) !== CODE_HASH) return msg("lock-msg", "That code doesn't match.", "err");
+    store("session", "notcake-unlocked", "1");
+  } else {
+    msg("lock-msg", "Checking…");
+    try { await loadPending(code); }
+    catch (err) {
+      return msg("lock-msg", err.status === 401 ? "That code doesn't match."
+        : err.status === 429 ? "Too many wrong tries. Wait an hour and try again."
+        : err.status === 503 ? err.message : "Couldn't check the code. Try again.", "err");
+    }
+    reviewCode = code;
+    store("session", "notcake-code", code);
+  }
   unlocked = true;
-  try { sessionStorage.setItem("notcake-unlocked", "1"); } catch {}
-  $("code").value = "";
+  $("code").value = ""; msg("lock-msg", "");
   showReview();
 });
 
@@ -598,6 +642,7 @@ function showReview() {
   $("lock-form").hidden = true;
   $("review-body").hidden = false;
   render();
+  if (!ON_CLAUDE) { if (!pending.length) loadPending(reviewCode).catch(reviewFailed); return; }
   if (!db) return msg("review-msg", "Sign in to claude.ai to review suggestions.");
   if (!owner) return msg("review-msg", "The code is right, but approving also needs the page owner's account. Open this page signed in as the owner.", "err");
   if (reviewSub) return;
@@ -614,59 +659,89 @@ function showReview() {
   }, () => msg("review-msg", "Couldn't load suggestions. Reload the page to try again.", "err"));
 }
 
+async function loadPending(code) {
+  const d = await apiCall("review", { action: "list" }, code);
+  pending = (d.pending || []).map(p => ({ ...clean(p, p.id), at: p.at || 0 })).sort((a, b) => a.at - b.at);
+  renderReview();
+}
+function reviewFailed(err) {
+  if (err?.status === 401) {
+    unlocked = false; reviewCode = null; store("session", "notcake-code", null);
+    $("lock-form").hidden = false; $("review-body").hidden = true; render();
+    return msg("lock-msg", "The approval code changed. Enter it again.", "err");
+  }
+  msg("review-msg", "That didn't save. Check your connection and try again.", "err");
+}
+
 function renderReview() {
   msg("review-msg", pending.length ? `${pending.length} waiting. Approved recipes appear for everyone right away.` : "No suggestions waiting. New ones show up here as they arrive.");
   $("review-list").innerHTML = pending.map(p => cardHTML(p, `
     <div class="actions">
-      <button class="mini approve" type="button" data-act="approve" data-uid="${esc(p.uid)}" data-rid="${esc(p.id)}">Approve</button>
-      <button class="mini" type="button" data-act="decline" data-uid="${esc(p.uid)}" data-rid="${esc(p.id)}">Decline</button>
+      <button class="mini approve" type="button" data-act="approve" data-uid="${esc(p.uid || "")}" data-rid="${esc(p.id)}">Approve</button>
+      <button class="mini" type="button" data-act="decline" data-uid="${esc(p.uid || "")}" data-rid="${esc(p.id)}">Decline</button>
     </div>`)).join("");
 }
 
 $("review-list").addEventListener("click", async e => {
-  const b = e.target.closest("button[data-act]"); if (!b || !db) return;
-  const p = pending.find(x => x.uid === b.dataset.uid && x.id === b.dataset.rid); if (!p) return;
-  b.closest(".actions").querySelectorAll("button").forEach(x => x.disabled = true);
+  const b = e.target.closest("button[data-act]"); if (!b) return;
+  const p = pending.find(x => (x.uid || "") === b.dataset.uid && x.id === b.dataset.rid); if (!p) return;
+  const btns = b.closest(".actions").querySelectorAll("button");
+  btns.forEach(x => x.disabled = true);
+  const act = b.dataset.act;
   try {
-    if (b.dataset.act === "approve") {
-      const { id, uid: from, community: _c, at, ...fields } = p;
-      await db.doc("approved/" + id).set({ ...fields, approvedAt: Date.now() });
+    if (ON_CLAUDE) {
+      if (!db) return;
+      if (act === "approve") {
+        const { id, uid: from, community: _c, at, ...fields } = p;
+        await db.doc("approved/" + id).set({ ...fields, approvedAt: Date.now() });
+      }
+      await db.doc("pending/" + p.uid).update({ items: { [p.id]: { status: act === "approve" ? "approved" : "declined" } } });
+    } else {
+      await apiCall("review", { action: act, id: p.id }, reviewCode);
+      await loadPending(reviewCode);
+      if (act === "approve") await loadApproved();
     }
-    await db.doc("pending/" + p.uid).update({ items: { [p.id]: { status: b.dataset.act === "approve" ? "approved" : "declined" } } });
-  } catch {
-    msg("review-msg", "That didn't save. Check your connection and try again.", "err");
-    b.closest(".actions").querySelectorAll("button").forEach(x => x.disabled = false);
+  } catch (err) {
+    btns.forEach(x => x.disabled = false);
+    if (ON_CLAUDE) msg("review-msg", "That didn't save. Check your connection and try again.", "err");
+    else reviewFailed(err);
   }
 });
 
 $("grid").addEventListener("click", async e => {
-  const b = e.target.closest("button[data-remove]"); if (!b || !db) return;
+  const b = e.target.closest("button[data-remove]"); if (!b) return;
   if (b.dataset.confirm !== "1") { b.dataset.confirm = "1"; b.textContent = "Click again to remove"; return; }
   b.disabled = true;
-  try { await db.doc("approved/" + b.dataset.remove).delete(); } catch { b.disabled = false; b.textContent = "Couldn't remove. Try again"; }
+  try {
+    if (ON_CLAUDE) await db.doc("approved/" + b.dataset.remove).delete();
+    else { await apiCall("review", { action: "remove", id: b.dataset.remove }, reviewCode); await loadApproved(); }
+  } catch { b.disabled = false; b.textContent = "Couldn't remove. Try again"; }
 });
 
-(async () => {
-  const [d, user] = await Promise.all([cap("db"), cap("user")]);
-  db = d;
-  if (user) {
-    owner = await user.isOwner().catch(() => false);
-    uid = await user.id().catch(() => null);
-  }
-  if (!db) {
-    msg("f-msg", "Sign in to claude.ai and open this page from its link to send suggestions.");
-    if (unlocked && !$("review").hidden) showReview();
-    return;
-  }
-  db.collection("approved").onSnapshot(snap => {
-    community = snap.docs.map(x => clean(x.data() || {}, x.id)).filter(r => r.ing.length && r.steps.length);
-    render();
-  }, () => {});
-  if (uid) db.doc("pending/" + uid).onSnapshot(snap => { mineItems = snap.exists ? (snap.data()?.items || {}) : {}; renderMine(); }, () => {});
-  if (owner) render();
-  if (location.hash === "#review") openReview();
-  else if (!$("review").hidden && unlocked) showReview();
-})();
+if (ON_CLAUDE) {
+  unlocked = store("session", "notcake-unlocked") === "1";
+  (async () => {
+    const [d, user] = await Promise.all([cap("db"), cap("user")]);
+    db = d;
+    if (user) {
+      owner = await user.isOwner().catch(() => false);
+      uid = await user.id().catch(() => null);
+    }
+    if (!db) {
+      msg("f-msg", "Sign in to claude.ai and open this page from its link to send suggestions.");
+      if (unlocked && !$("review").hidden) showReview();
+      return;
+    }
+    db.collection("approved").onSnapshot(snap => setCommunity(snap.docs.map(x => ({ ...(x.data() || {}), id: x.id }))), () => {});
+    if (uid) db.doc("pending/" + uid).onSnapshot(snap => { mineItems = snap.exists ? (snap.data()?.items || {}) : {}; renderMine(Object.values(mineItems)); }, () => {});
+    if (owner) render();
+    if (!$("review").hidden && unlocked) showReview();
+  })();
+} else {
+  unlocked = !!reviewCode;
+  // If this host has no working /api (plain static hosting, or storage not connected yet), hide the feature.
+  loadApproved().then(() => loadMine().catch(() => {})).catch(hideSuggestions);
+}
 if (location.hash === "#review") openReview();
 </script>
 
