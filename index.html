@@ -1,0 +1,674 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Not Cake</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Figtree:wght@400;600;800&family=DM+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a dusk walk. Photo hero under a violet streetlight, a sticky glass filter bar, recipe cards glowing like lit windows, amber city lights as dividers.
+   Deliberately single-theme: the page is always twilight. */
+:root {
+  color-scheme: dark;
+  --night: #0f0c1a;        /* road after sundown */
+  --dusk: #1a1530;         /* card surface */
+  --haze: #282143;         /* chips, inputs */
+  --ink: #eee8ff;
+  --muted: #a99fc8;
+  --rule: rgb(196 170 255 / .16);
+  --violet: #b58cff;       /* the streetlight */
+  --glow: #dcc8ff;
+  --amber: #ffc46b;        /* city lights on the horizon */
+  --horizon: #c6d4c2;      /* last light in the sky */
+  --yellow: #f2b632; --white: #d4cbe6; --chocolate: #a8664a; --lemon: #e4d43a; --spice: #d07a35; --funfetti: #ef7cc0;
+  --display: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+  --body: "Figtree", system-ui, -apple-system, sans-serif;
+  --mono: "DM Mono", ui-monospace, Menlo, monospace;
+  --gutter-l: max(16px, env(safe-area-inset-left, 0px));
+  --gutter-r: max(16px, env(safe-area-inset-right, 0px));
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 9rem; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  background: var(--night);
+  background-image: linear-gradient(180deg, #2a2346 0%, var(--night) 38rem);
+  color: var(--ink);
+  font: 400 1rem/1.55 var(--body);
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--night); }
+.inner { max-width: 72rem; margin: 0 auto; padding-left: var(--gutter-l); padding-right: var(--gutter-r); }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+p { margin: 0; }
+.label { font: 500 .72rem/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+button:focus-visible, input:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid var(--glow); outline-offset: 3px; border-radius: 6px; }
+
+/* Hero */
+.hero { position: relative; overflow: hidden; isolation: isolate; }
+.hero-photo {
+  position: absolute; inset: 0; z-index: -2;
+  background: url("dusk.jpg") center 38% / cover no-repeat;
+}
+.hero::after {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background:
+    linear-gradient(90deg, rgb(15 12 26 / .92) 0%, rgb(15 12 26 / .55) 55%, rgb(15 12 26 / .15) 100%),
+    linear-gradient(0deg, var(--night) 0%, transparent 35%);
+}
+.hero .inner { padding-block: clamp(4rem, 12vw, 9rem) clamp(3.5rem, 9vw, 6rem); display: grid; gap: 1.25rem; }
+.hero .label { color: var(--horizon); }
+.hero h1 {
+  font: 400 clamp(3.6rem, 13vw, 8.5rem)/.9 var(--display); letter-spacing: -.01em;
+  text-shadow: 0 0 28px rgb(181 140 255 / .55), 0 0 2px rgb(255 255 255 / .4);
+}
+.hero h1 em { color: var(--violet); }
+.hero h1 s { color: var(--muted); text-decoration-thickness: .05em; text-shadow: none; font-style: italic; }
+.hero p { font-size: 1.15rem; color: #d6cfee; max-width: 34rem; }
+.hero p strong { color: var(--ink); font-weight: 600; }
+.hero-cta { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: .5rem; }
+.btn {
+  font: 600 .95rem/1 var(--body); text-decoration: none; border-radius: 999px; padding: .8rem 1.2rem;
+  color: var(--night); background: var(--glow); box-shadow: 0 0 24px rgb(181 140 255 / .45);
+}
+.btn.ghost { background: rgb(255 255 255 / .06); color: var(--ink); box-shadow: inset 0 0 0 1px var(--rule); backdrop-filter: blur(6px); }
+.btn:hover { filter: brightness(1.08); }
+
+/* City lights divider */
+.lights { height: 18px; margin-block: 1rem; opacity: .9;
+  background:
+    radial-gradient(circle at 4% 50%, var(--amber) 0 2px, transparent 5px),
+    radial-gradient(circle at 11% 60%, var(--amber) 0 1.5px, transparent 4px),
+    radial-gradient(circle at 19% 40%, #fff3d6 0 2px, transparent 6px),
+    radial-gradient(circle at 27% 55%, var(--amber) 0 1.5px, transparent 4px),
+    radial-gradient(circle at 36% 45%, var(--amber) 0 2.5px, transparent 7px),
+    radial-gradient(circle at 44% 60%, #fff3d6 0 1.5px, transparent 4px),
+    radial-gradient(circle at 53% 50%, var(--amber) 0 2px, transparent 6px),
+    radial-gradient(circle at 61% 42%, var(--amber) 0 1.5px, transparent 4px),
+    radial-gradient(circle at 70% 58%, #fff3d6 0 2.5px, transparent 7px),
+    radial-gradient(circle at 79% 48%, var(--amber) 0 1.5px, transparent 4px),
+    radial-gradient(circle at 88% 55%, var(--amber) 0 2px, transparent 6px),
+    radial-gradient(circle at 96% 45%, #fff3d6 0 1.5px, transparent 4px),
+    linear-gradient(90deg, transparent, rgb(255 196 107 / .12) 20%, rgb(255 196 107 / .12) 80%, transparent);
+}
+
+/* Sticky filter bar */
+.bar {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: rgb(15 12 26 / .78); backdrop-filter: blur(14px) saturate(1.3); -webkit-backdrop-filter: blur(14px) saturate(1.3);
+  border-bottom: 1px solid var(--rule);
+}
+.bar .inner { padding-block: .75rem; display: grid; gap: .6rem; }
+.bar-top { display: flex; flex-wrap: wrap; gap: .6rem 1rem; align-items: center; justify-content: space-between; }
+.search-wrap { position: relative; flex: 1 1 16rem; max-width: 24rem; }
+.search-wrap svg { position: absolute; left: .8rem; top: 50%; translate: 0 -50%; width: 1rem; height: 1rem; stroke: var(--muted); fill: none; stroke-width: 2; }
+#search {
+  width: 100%; font: 400 1rem/1 var(--body); color: var(--ink); background: var(--haze);
+  border: 1px solid var(--rule); border-radius: 999px; padding: .65rem 1rem .65rem 2.3rem;
+}
+#search::placeholder { color: var(--muted); }
+.tabs { display: flex; gap: .3rem; font: 500 .8rem/1 var(--mono); }
+.tabs a { color: var(--muted); text-decoration: none; padding: .5rem .7rem; border-radius: 999px; }
+.tabs a:hover { color: var(--ink); background: var(--haze); }
+.chips { display: flex; gap: .4rem; overflow-x: auto; scrollbar-width: none; padding-block: .15rem; mask-image: linear-gradient(90deg, #000 92%, transparent); }
+.chips::-webkit-scrollbar { display: none; }
+.chip {
+  flex: none; font: 600 .85rem/1 var(--body); color: var(--muted); background: transparent;
+  border: 1px solid var(--rule); border-radius: 999px; padding: .5rem .8rem; cursor: pointer;
+  display: inline-flex; align-items: center; gap: .45rem; transition: color .15s, border-color .15s, background .15s;
+}
+.chip:hover { color: var(--ink); }
+.chip .sw { width: .6rem; height: .6rem; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
+.chip[aria-pressed="true"] { color: var(--night); background: var(--glow); border-color: var(--glow); }
+.chip.sep { width: 1px; padding: 0; border: 0; background: var(--rule); cursor: default; }
+
+/* Recipes */
+main { padding-block: 2rem 1rem; }
+.results { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+.results h2 { font: 400 clamp(2rem, 5vw, 3rem)/1 var(--display); }
+.count { font: 400 .85rem/1 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.clear { font: 500 .8rem/1 var(--mono); color: var(--violet); background: none; border: 0; cursor: pointer; padding: .3rem; text-decoration: underline; text-underline-offset: 3px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr)); gap: 1.1rem; align-items: start; }
+.card {
+  position: relative; background: linear-gradient(180deg, color-mix(in srgb, var(--flavor) 9%, var(--dusk)) 0%, var(--dusk) 9rem);
+  border: 1px solid var(--rule); border-radius: 16px; padding: 1.25rem; display: grid; gap: .85rem; min-width: 0;
+  transition: border-color .2s, box-shadow .2s, translate .2s;
+}
+.card::before {
+  content: ""; position: absolute; top: -1px; left: 1.25rem; width: 3rem; height: 3px; border-radius: 0 0 3px 3px;
+  background: var(--flavor); box-shadow: 0 0 14px var(--flavor);
+}
+.card:hover { border-color: rgb(196 170 255 / .35); box-shadow: 0 12px 40px -18px rgb(181 140 255 / .5); }
+@media (prefers-reduced-motion: no-preference) { .card:hover { translate: 0 -2px; } }
+.meta { display: flex; justify-content: space-between; gap: .5rem; flex-wrap: wrap; }
+.card h3 { font: 400 1.75rem/1.05 var(--display); }
+.blurb { color: var(--muted); }
+.facts { display: flex; flex-wrap: wrap; gap: .4rem; }
+.fact { font: 400 .78rem/1 var(--mono); font-variant-numeric: tabular-nums; padding: .4rem .6rem; border-radius: 999px; background: var(--haze); }
+.fact b { font-weight: 500; color: var(--amber); margin-right: .35rem; }
+.card h4 { margin: 0 0 .4rem; font: 500 .7rem/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.card ul, .card ol { margin: 0; padding-left: 1.2rem; display: grid; gap: .3rem; }
+.card li::marker { color: var(--violet); }
+details { border-top: 1px solid var(--rule); padding-top: .8rem; }
+summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; font: 600 .9rem/1 var(--body); color: var(--glow); }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "+"; font: 400 1.3rem/1 var(--mono); color: var(--violet); }
+details[open] summary::after { content: "–"; }
+details[open] summary { margin-bottom: .8rem; }
+.tip { font-size: .9rem; margin-top: .8rem; padding: .7rem .8rem; border-radius: 10px; background: rgb(255 196 107 / .08); color: #f1e3c8; }
+.tip b { color: var(--amber); }
+.empty { grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 3rem 1rem; display: grid; gap: .8rem; justify-items: center; }
+
+/* Where to buy */
+#buy { padding-block: 1rem 2rem; }
+.shop-head { display: grid; gap: .6rem; max-width: 44rem; }
+.shop-head h2 { font: 400 clamp(2rem, 5vw, 3rem)/1 var(--display); }
+.shop-head p { color: var(--muted); }
+.shelf { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 15.5rem), 1fr)); gap: 1.1rem; margin-top: 1.5rem; }
+.mix { background: var(--dusk); border: 1px solid var(--rule); border-radius: 16px; padding: 1.25rem; display: grid; gap: .85rem; align-content: start; min-width: 0; }
+.pkg-row {
+  display: flex; gap: .6rem; align-items: end; height: 9rem; padding: 1.1rem .8rem .8rem; border-radius: 10px;
+  background: radial-gradient(ellipse at 30% 0%, rgb(181 140 255 / .35), transparent 70%), var(--haze);
+}
+.pkg {
+  position: relative; width: 4.2rem; height: 6.2rem; border-radius: 3px;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--flavor) 80%, #fff) 0%, var(--flavor) 60%);
+  box-shadow: inset -9px 0 0 rgb(0 0 0 / .18), 0 10px 16px -8px rgb(0 0 0 / .7), 0 0 20px -6px var(--flavor);
+  display: grid; place-items: center; text-align: center; padding: .35rem .5rem .35rem .3rem;
+  font: italic 400 .95rem/1 var(--display); color: #fff; text-shadow: 0 1px 2px rgb(0 0 0 / .45);
+}
+.pkg::before { content: ""; position: absolute; left: 0; right: 0; top: -.7rem; height: .7rem;
+  background: color-mix(in srgb, var(--flavor) 65%, #fff); transform: skewX(-35deg); transform-origin: bottom; border-radius: 2px 2px 0 0; }
+.pkg:nth-child(2) { height: 5.6rem; }
+.pkg:nth-child(3) { height: 5.9rem; }
+.mix h3 { font: 400 1.5rem/1.1 var(--display); }
+.mix p { font-size: .92rem; color: var(--muted); }
+.size { font: 400 .78rem/1.3 var(--mono); color: var(--amber); font-variant-numeric: tabular-nums; }
+.stores { display: flex; flex-wrap: wrap; gap: .45rem; }
+.store {
+  font: 600 .85rem/1 var(--body); color: var(--glow); text-decoration: none;
+  border: 1px solid rgb(181 140 255 / .5); border-radius: 999px; padding: .5rem .8rem; transition: background .15s, color .15s;
+}
+.store:hover { background: var(--glow); color: var(--night); }
+.store::after { content: " ↗"; }
+
+/* Suggest + review */
+.panel-wrap { padding-block: 2rem; display: grid; gap: 1.25rem; }
+.panel-head { display: grid; gap: .6rem; max-width: 44rem; }
+.panel-head h2 { font: 400 clamp(2rem, 5vw, 3rem)/1 var(--display); }
+.panel-head p { color: var(--muted); }
+.suggest-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 1.1rem; align-items: start; }
+.panel { background: var(--dusk); border: 1px solid var(--rule); border-radius: 16px; padding: 1.25rem; display: grid; gap: 1rem; min-width: 0; }
+.field { display: grid; gap: .4rem; min-width: 0; }
+.field label { font: 500 .72rem/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.field input, .field select, .field textarea {
+  font: 400 1rem/1.4 var(--body); color: var(--ink); background: var(--haze);
+  border: 1px solid var(--rule); border-radius: 10px; padding: .65rem .8rem; width: 100%;
+}
+.field input::placeholder, .field textarea::placeholder { color: rgb(169 159 200 / .6); }
+.field textarea { min-height: 7rem; resize: vertical; }
+.field small { color: var(--muted); font-size: .8rem; }
+.row2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr)); gap: .9rem; }
+.form-foot { display: flex; flex-wrap: wrap; gap: .8rem; align-items: center; }
+button.btn { border: 0; cursor: pointer; }
+button.btn:disabled { opacity: .5; cursor: default; }
+.msg { font-size: .9rem; color: var(--muted); }
+.msg.ok { color: var(--horizon); }
+.msg.err { color: #ffa3b1; }
+.mine { display: grid; }
+.mine-item { display: flex; justify-content: space-between; gap: .6rem; align-items: baseline; padding-block: .6rem; border-bottom: 1px solid var(--rule); }
+.mine-item:last-child { border-bottom: 0; }
+.mine-item span:first-child { min-width: 0; overflow-wrap: anywhere; }
+.status { font: 500 .68rem/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; padding: .35rem .55rem; border-radius: 999px; white-space: nowrap; }
+.status.pending { background: rgb(255 196 107 / .12); color: var(--amber); }
+.status.approved { background: rgb(198 212 194 / .14); color: var(--horizon); }
+.status.declined { background: var(--haze); color: var(--muted); }
+.badge { font: 500 .68rem/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--amber); }
+.actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.mini { font: 600 .82rem/1 var(--body); color: var(--ink); background: none; border: 1px solid var(--rule); border-radius: 999px; padding: .5rem .8rem; cursor: pointer; }
+.mini:hover { border-color: var(--violet); }
+.mini.approve { color: var(--night); background: var(--glow); border-color: var(--glow); }
+.mini.danger { color: #ffa3b1; border-color: rgb(255 163 177 / .4); }
+.lockrow { display: flex; flex-wrap: wrap; gap: .8rem; align-items: end; max-width: 34rem; }
+.lockrow .field { flex: 1 1 12rem; }
+.owner-link { background: none; border: 0; color: var(--muted); font: 500 .75rem/1 var(--mono); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; padding: .3rem 0; margin-top: 1rem; }
+@media (max-width: 800px) { .suggest-grid { grid-template-columns: minmax(0, 1fr); } }
+
+footer { padding-block: 1rem 3rem; }
+.box-note { font-size: .9rem; color: var(--muted); max-width: 46rem; border-top: 1px solid var(--rule); padding-top: 1.25rem; }
+.box-note b { color: var(--horizon); font-weight: 600; }
+
+@media (max-width: 640px) {
+  .tabs { display: none; }
+  .search-wrap { max-width: none; }
+  .hero::after { background: linear-gradient(0deg, var(--night) 0%, rgb(15 12 26 / .6) 45%, rgb(15 12 26 / .35) 100%); }
+}
+</style>
+
+<header class="hero">
+  <div class="hero-photo" role="img" aria-label="A sidewalk at dusk under a violet streetlight, city lights glowing on the horizon"></div>
+  <div class="inner">
+    <div class="label">One box of mix · zero cakes</div>
+    <h1>Not <s>cake.</s><br><em>Something else.</em></h1>
+    <p>A box of cake mix is flour, sugar, leavening and flavor already measured out. Turn it into <strong>cookies, bars, waffles, cinnamon rolls, dip and popcorn</strong> instead.</p>
+    <div class="hero-cta">
+      <a class="btn" href="#recipes">Browse <span id="n-recipes">12</span> recipes</a>
+      <a class="btn ghost" href="#suggest">Suggest a recipe</a>
+      <a class="btn ghost" href="#buy">Where to buy a box</a>
+    </div>
+  </div>
+</header>
+
+<div class="bar">
+  <div class="inner">
+    <div class="bar-top">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+        <label class="label" for="search" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Search recipes</label>
+        <input id="search" type="search" placeholder="Search: cream cheese, waffle iron…" autocomplete="off">
+      </div>
+      <nav class="tabs" aria-label="Sections"><a href="#recipes">Recipes</a><a href="#suggest">Suggest</a><a href="#buy">Where to buy</a></nav>
+    </div>
+    <div class="chips" id="chips" role="group" aria-label="Filter by mix flavor and recipe type"></div>
+  </div>
+</div>
+
+<main id="recipes" class="inner">
+  <div class="results">
+    <h2 id="results-title">All recipes</h2>
+    <div><span class="count" id="count"></span> <button class="clear" id="clear" type="button" hidden>Clear filters</button></div>
+  </div>
+  <div class="grid" id="grid" aria-live="polite"></div>
+</main>
+
+<section id="suggest" class="inner panel-wrap" aria-labelledby="suggest-title">
+  <div class="panel-head">
+    <div class="label">From the community</div>
+    <h2 id="suggest-title">Suggest a recipe</h2>
+    <p>Know a cake-mix trick that isn't cake? Send it in. Every suggestion is reviewed first, and approved recipes join the list above with your name on them.</p>
+  </div>
+  <div class="suggest-grid">
+    <form class="panel" id="suggest-form" novalidate>
+      <div class="field"><label for="f-name">Recipe name</label><input id="f-name" maxlength="80" placeholder="Cake mix cheesecake bars" autocomplete="off"></div>
+      <div class="row2">
+        <div class="field"><label for="f-flavor">Mix flavor</label><select id="f-flavor"></select></div>
+        <div class="field"><label for="f-type">Type</label><select id="f-type"></select></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="f-time">Time</label><input id="f-time" maxlength="20" placeholder="30 min"></div>
+        <div class="field"><label for="f-yield">Makes</label><input id="f-yield" maxlength="30" placeholder="16 bars"></div>
+        <div class="field"><label for="f-temp">Heat</label><input id="f-temp" maxlength="20" placeholder="350 °F"></div>
+      </div>
+      <div class="field"><label for="f-blurb">One-line description</label><input id="f-blurb" maxlength="160" placeholder="What makes it good, in a sentence"></div>
+      <div class="field"><label for="f-ing">Ingredients</label><textarea id="f-ing" placeholder="1 box yellow cake mix&#10;2 large eggs&#10;8 oz cream cheese"></textarea><small>One per line.</small></div>
+      <div class="field"><label for="f-steps">Steps</label><textarea id="f-steps" placeholder="Heat oven to 350 °F.&#10;Mix cake mix and eggs…"></textarea><small>One step per line, in order.</small></div>
+      <div class="field"><label for="f-tip">Tip (optional)</label><input id="f-tip" maxlength="200"></div>
+      <div class="field"><label for="f-by">Your name</label><input id="f-by" maxlength="40" placeholder="Shown on the recipe if it's approved"></div>
+      <div class="form-foot"><button class="btn" type="submit" id="f-submit">Send for review</button><span class="msg" id="f-msg" role="status"></span></div>
+    </form>
+    <aside class="panel" aria-labelledby="mine-title">
+      <h3 id="mine-title" class="label">Your suggestions</h3>
+      <div class="mine" id="mine"><p class="msg">Nothing sent yet. What you send shows up here with its review status.</p></div>
+    </aside>
+  </div>
+</section>
+
+<section id="review" class="inner panel-wrap" aria-labelledby="review-title" hidden>
+  <div class="panel-head">
+    <div class="label">Owner only</div>
+    <h2 id="review-title">Review suggestions</h2>
+  </div>
+  <form class="panel lockrow" id="lock-form">
+    <div class="field"><label for="code">Approval code</label><input id="code" type="password" autocomplete="off"></div>
+    <button class="btn" type="submit">Unlock</button>
+    <span class="msg" id="lock-msg" role="status"></span>
+  </form>
+  <div id="review-body" hidden>
+    <p class="msg" id="review-msg" role="status"></p>
+    <div class="grid" id="review-list"></div>
+  </div>
+</section>
+
+<div class="inner"><div class="lights" aria-hidden="true"></div></div>
+
+<section id="buy" class="inner" aria-labelledby="buy-title">
+  <div class="shop-head">
+    <div class="label">Stock the pantry</div>
+    <h2 id="buy-title">Where to grab a box</h2>
+    <p>The common boxes in US grocery aisles. Each button opens that store's search, so you see the price and stock near you. H-E-B is in Texas only. Walmart and Amazon both deliver.</p>
+  </div>
+  <div class="shelf" id="shelf"></div>
+</section>
+
+<footer class="inner">
+  <p class="box-note"><b>Box sizes.</b> Recipes assume a standard 15.25&nbsp;oz (432&nbsp;g) box. Some Betty Crocker boxes are now 13.25&nbsp;oz. With those, use about 2 tablespoons less liquid or oil, or add ⅓ cup flour. <b>Raw mix.</b> Like raw flour it can carry bacteria, so the no-bake recipes heat-treat it first: microwave on a plate in 30-second bursts, stirring, until it reaches 160&nbsp;°F (71&nbsp;°C).</p>
+  <button class="owner-link" id="owner-link" type="button">Owner review</button>
+</footer>
+
+<script>
+const FLAVORS = { yellow: "Yellow", white: "White", chocolate: "Chocolate", lemon: "Lemon", spice: "Spice", funfetti: "Funfetti" };
+const TYPES = { cookies: "Cookies", bars: "Bars", breakfast: "Breakfast", nobake: "No-bake", dessert: "Cobbler" };
+
+const RECIPES = [
+  { name: "Three-Ingredient Cake Mix Cookies", flavor: "yellow", type: "cookies", time: "20 min", yield: "24 cookies", temp: "350 °F",
+    blurb: "Soft, chewy cookies with a crackly top. Works with any flavor of mix.",
+    ing: ["1 box cake mix", "2 large eggs", "⅓ cup vegetable oil", "1 cup chocolate chips or sprinkles (optional)"],
+    steps: ["Heat oven to 350 °F and line two sheets with parchment.", "Stir mix, eggs and oil into a stiff dough. Fold in chips.", "Roll into 1½-inch balls, 2 inches apart.", "Bake 8–10 minutes, until edges set and centers look slightly underdone. Cool 5 minutes on the sheet."],
+    tip: "Chill the dough 30 minutes for thicker cookies." },
+  { name: "Lemon Crinkle Cookies", flavor: "lemon", type: "cookies", time: "25 min", yield: "30 cookies", temp: "350 °F",
+    blurb: "Bright, tart, and rolled in powdered sugar so they crack as they bake.",
+    ing: ["1 box lemon cake mix", "2 large eggs", "⅓ cup vegetable oil", "1 tbsp lemon zest", "½ cup powdered sugar, for rolling"],
+    steps: ["Heat oven to 350 °F.", "Mix cake mix, eggs, oil and zest. Dough will be sticky.", "Scoop tablespoon-size balls and roll heavily in powdered sugar.", "Bake 9–11 minutes, until puffed and cracked."],
+    tip: "Roll twice in sugar for bright white cracks." },
+  { name: "Fudgy Cake Mix Brownies", flavor: "chocolate", type: "bars", time: "35 min", yield: "24 squares", temp: "350 °F",
+    blurb: "Dense and chewy, closer to a brownie than anything fluffy.",
+    ing: ["1 box chocolate or devil's food mix", "2 large eggs", "½ cup butter, melted", "¼ cup milk", "1 cup chocolate chips"],
+    steps: ["Heat oven to 350 °F and grease a 9×13 pan.", "Stir mix, eggs, butter and milk into a thick batter. Fold in chips.", "Spread into the pan; it will be stiff.", "Bake 20–25 minutes until the center is just set. Cool fully before cutting."],
+    tip: "Pull them early. A clean toothpick means you overbaked." },
+  { name: "St. Louis Gooey Butter Bars", flavor: "yellow", type: "bars", time: "1 hr", yield: "24 bars", temp: "350 °F",
+    blurb: "A chewy crust under a rich, custardy cream-cheese layer.",
+    ing: ["1 box yellow cake mix", "3 large eggs, divided", "½ cup butter, melted", "8 oz cream cheese, softened", "1 tsp vanilla", "4 cups (1 lb) powdered sugar"],
+    steps: ["Heat oven to 350 °F and grease a 9×13 pan.", "Mix cake mix, 1 egg and butter; press into the pan.", "Beat cream cheese, remaining 2 eggs and vanilla. Beat in powdered sugar until smooth.", "Pour over crust. Bake 40–50 minutes until golden but still jiggly in the middle."],
+    tip: "Cut them cold. They set up as they chill." },
+  { name: "Pumpkin Spice Muffins", flavor: "spice", type: "breakfast", time: "30 min", yield: "18 muffins", temp: "350 °F",
+    blurb: "Two ingredients. No eggs, no oil. Moist and very forgiving.",
+    ing: ["1 box spice cake mix", "1 can (15 oz) pumpkin purée", "½ cup chocolate chips (optional)"],
+    steps: ["Heat oven to 350 °F and line a muffin tin.", "Stir mix and pumpkin together. It will be thick, so don't add water.", "Fill cups ¾ full.", "Bake 20–25 minutes, until a toothpick comes out with moist crumbs."],
+    tip: "Add 1 tsp cinnamon if your mix tastes mild." },
+  { name: "Cake Mix Waffles", flavor: "funfetti", type: "breakfast", time: "20 min", yield: "6 large waffles", temp: "Waffle iron",
+    blurb: "Crisp outside, a little sweet, and full of sprinkles.",
+    ing: ["1 box funfetti cake mix", "2 large eggs", "1 cup milk", "½ cup vegetable oil"],
+    steps: ["Preheat and grease a waffle iron.", "Whisk everything until just combined. A few lumps are fine.", "Pour batter into the iron per its instructions.", "Cook until steam stops and waffles release easily, about 4 minutes."],
+    tip: "Serve with whipped cream instead of syrup. They're already sweet." },
+  { name: "Weekend Pancakes", flavor: "yellow", type: "breakfast", time: "20 min", yield: "12 pancakes", temp: "Med. griddle",
+    blurb: "Cake mix cut with plain flour so they stay pancakes.",
+    ing: ["1 cup cake mix", "1 cup all-purpose flour", "1 tsp baking powder", "1 large egg", "1 cup milk", "1 tbsp melted butter"],
+    steps: ["Whisk cake mix, flour and baking powder.", "Add egg, milk and butter; stir until barely combined.", "Pour ¼-cup portions onto a buttered griddle over medium heat.", "Flip when bubbles pop on top, about 2 minutes per side."],
+    tip: "Lower heat than usual. The extra sugar browns fast." },
+  { name: "Cake Mix Cinnamon Rolls", flavor: "yellow", type: "breakfast", time: "3 hr", yield: "24 rolls", temp: "350 °F",
+    blurb: "The mix makes a rich, tender yeast dough. Big batch.",
+    ing: ["1 box yellow cake mix", "5 cups all-purpose flour", "2 packets (4½ tsp) instant yeast", "2½ cups warm water (110 °F)", "½ cup softened butter, 1 cup brown sugar, 2 tbsp cinnamon for filling"],
+    steps: ["Mix cake mix, flour and yeast. Add water and knead 5 minutes until smooth.", "Cover and let rise until doubled, about 1 hour.", "Roll into a large rectangle. Spread butter, then sprinkle brown sugar and cinnamon.", "Roll up, cut into 24 slices, and place in two greased 9×13 pans. Rise 45 minutes.", "Bake 20–25 minutes until golden."],
+    tip: "Top with cream-cheese glaze while still warm." },
+  { name: "Baked Cake Mix Donuts", flavor: "chocolate", type: "breakfast", time: "25 min", yield: "12 donuts", temp: "350 °F",
+    blurb: "No frying. Dip in glaze and add sprinkles.",
+    ing: ["1 box chocolate cake mix", "2 large eggs", "½ cup milk", "¼ cup butter, melted", "Glaze: 1 cup powdered sugar + 2 tbsp milk"],
+    steps: ["Heat oven to 350 °F and grease a donut pan.", "Whisk mix, eggs, milk and butter.", "Pipe batter into wells about ⅔ full. A zip-top bag with a corner cut off works.", "Bake 10–12 minutes. Cool, then dip tops in glaze."],
+    tip: "No donut pan? Use a mini muffin tin for donut holes." },
+  { name: "Cherry Pineapple Dump Cobbler", flavor: "yellow", type: "dessert", time: "1 hr", yield: "12 servings", temp: "350 °F",
+    blurb: "Fruit on the bottom and a buttery, crumbly top. You don't stir.",
+    ing: ["1 can (20 oz) crushed pineapple, with juice", "1 can (21 oz) cherry pie filling", "1 box yellow cake mix, dry", "¾ cup (1½ sticks) cold butter, thinly sliced"],
+    steps: ["Heat oven to 350 °F.", "Spread pineapple, then cherry filling, in a 9×13 pan.", "Sprinkle the dry mix evenly on top. Don't stir.", "Cover with butter slices. Bake 45–55 minutes, until bubbling and golden."],
+    tip: "Cover any dry patches of mix with butter, or they'll stay powdery." },
+  { name: "Funfetti Cake Batter Dip", flavor: "funfetti", type: "nobake", time: "10 min", yield: "4 cups", temp: "No oven",
+    blurb: "Tastes like licking the bowl. Serve with graham crackers or pretzels.",
+    ing: ["1 cup funfetti cake mix, heat-treated", "1 cup plain Greek yogurt", "8 oz whipped topping, thawed", "¼ cup rainbow sprinkles"],
+    steps: ["Heat-treat the mix (see the note at the bottom) and let it cool.", "Stir mix and yogurt until smooth.", "Fold in the whipped topping gently.", "Top with sprinkles and chill 1 hour."],
+    tip: "Swap the yogurt for softened cream cheese for a thicker dip." },
+  { name: "Cake Batter Popcorn", flavor: "white", type: "nobake", time: "15 min", yield: "10 cups", temp: "No oven",
+    blurb: "Sweet, salty, crunchy. Made for movie night.",
+    ing: ["10 cups popped popcorn, lightly salted", "12 oz white chocolate or candy melts", "½ cup white cake mix, heat-treated", "¼ cup sprinkles"],
+    steps: ["Spread popcorn on a parchment-lined sheet.", "Melt chocolate in 30-second bursts, stirring.", "Drizzle over popcorn and toss.", "Immediately sift the mix over the top, add sprinkles, and let set 20 minutes. Break into clusters."],
+    tip: "Pick out unpopped kernels before coating." },
+];
+
+const state = { flavor: null, type: null, q: "" };
+const $ = id => document.getElementById(id);
+
+$("chips").innerHTML =
+  `<button class="chip" type="button" data-k="all" aria-pressed="true">All</button><span class="chip sep" aria-hidden="true"></span>` +
+  Object.entries(TYPES).map(([k, v]) => `<button class="chip" type="button" data-k="type" data-v="${k}" aria-pressed="false">${v}</button>`).join("") +
+  `<span class="chip sep" aria-hidden="true"></span>` +
+  Object.entries(FLAVORS).map(([k, v]) => `<button class="chip" type="button" data-k="flavor" data-v="${k}" aria-pressed="false" style="--c:var(--${k})"><span class="sw" style="background:var(--${k});color:var(--${k})"></span>${v} mix</button>`).join("");
+
+$("chips").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.k === "all") { state.flavor = state.type = null; }
+  else { const k = b.dataset.k; state[k] = state[k] === b.dataset.v ? null : b.dataset.v; }
+  render();
+});
+$("search").addEventListener("input", e => { state.q = e.target.value; render(); });
+$("clear").addEventListener("click", () => { state.flavor = state.type = null; state.q = ""; $("search").value = ""; render(); });
+
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const str = (v, n) => String(v ?? "").trim().slice(0, n);
+const lines = (v, max) => (Array.isArray(v) ? v : []).map(x => str(x, 300)).filter(Boolean).slice(0, max);
+
+// Community recipes come from other people, so every field is cleaned and escaped before it is shown.
+function clean(d, id) {
+  return {
+    id, community: true,
+    name: str(d.name, 80) || "Untitled recipe",
+    flavor: FLAVORS[d.flavor] ? d.flavor : "yellow",
+    type: TYPES[d.type] ? d.type : "dessert",
+    time: str(d.time, 20) || "—", yield: str(d.yield, 30) || "—", temp: str(d.temp, 20) || "—",
+    blurb: str(d.blurb, 160), tip: str(d.tip, 200), by: str(d.by, 40),
+    ing: lines(d.ing, 30), steps: lines(d.steps, 30),
+  };
+}
+
+let community = [];
+let db = null, uid = null, owner = false, unlocked = false, reviewSub = null, pending = [], mineItems = {};
+try { unlocked = sessionStorage.getItem("notcake-unlocked") === "1"; } catch {}
+
+function cardHTML(r, actions = "") {
+  return `
+    <article class="card" style="--flavor:var(--${r.flavor})">
+      <div class="meta"><span class="label">${FLAVORS[r.flavor]} mix</span><span class="label">${TYPES[r.type]}</span></div>
+      ${r.community ? `<span class="badge">Community recipe${r.by ? ` · from ${esc(r.by)}` : ""}</span>` : ""}
+      <h3>${esc(r.name)}</h3>
+      ${r.blurb ? `<p class="blurb">${esc(r.blurb)}</p>` : ""}
+      <div class="facts"><span class="fact"><b>Time</b>${esc(r.time)}</span><span class="fact"><b>Makes</b>${esc(r.yield)}</span><span class="fact"><b>Heat</b>${esc(r.temp)}</span></div>
+      <div><h4>You'll need</h4><ul>${r.ing.map(i => `<li>${esc(i)}</li>`).join("")}</ul></div>
+      <details><summary>How to make it</summary><ol>${r.steps.map(s => `<li>${esc(s)}</li>`).join("")}</ol>${r.tip ? `<p class="tip"><b>Tip:</b> ${esc(r.tip)}</p>` : ""}</details>
+      ${actions}
+    </article>`;
+}
+
+function render() {
+  const all = [...RECIPES, ...community];
+  $("n-recipes").textContent = all.length;
+  document.querySelectorAll("#chips button").forEach(b => {
+    const on = b.dataset.k === "all" ? !state.flavor && !state.type : state[b.dataset.k] === b.dataset.v;
+    b.setAttribute("aria-pressed", on);
+  });
+  const q = state.q.trim().toLowerCase();
+  const list = all.filter(r =>
+    (!state.flavor || r.flavor === state.flavor) &&
+    (!state.type || r.type === state.type) &&
+    (!q || [r.name, r.blurb, r.tip, r.temp, ...r.ing, ...r.steps].join(" ").toLowerCase().includes(q)));
+  const filtered = state.flavor || state.type || q;
+  $("results-title").textContent = filtered
+    ? [state.type ? TYPES[state.type] : "Recipes", state.flavor ? `with ${FLAVORS[state.flavor].toLowerCase()} mix` : ""].join(" ").trim()
+    : "All recipes";
+  $("count").textContent = `${list.length} of ${all.length}`;
+  $("clear").hidden = !filtered;
+  const canRemove = owner && unlocked && db;
+  $("grid").innerHTML = list.length ? list.map(r => cardHTML(r,
+      r.community && canRemove ? `<div class="actions"><button class="mini danger" type="button" data-remove="${esc(r.id)}">Remove from site</button></div>` : "")).join("")
+    : `<div class="empty"><p>No recipes match that combination.</p><button class="btn ghost" type="button" onclick="document.getElementById('clear').click()">Clear filters</button></div>`;
+}
+
+const HEB = q => `https://www.heb.com/search/?q=${encodeURIComponent(q)}`;
+const WMT = q => `https://www.walmart.com/search?q=${encodeURIComponent(q)}`;
+const AMZ = q => `https://www.amazon.com/s?k=${encodeURIComponent(q)}`;
+const STORE = { heb: ["H-E-B", HEB], wmt: ["Walmart", WMT], amz: ["Amazon", AMZ] };
+const MIXES = [
+  { brand: "Betty Crocker Super Moist", size: "13.25–15.25 oz (check the box)", boxes: ["yellow", "chocolate", "funfetti"],
+    note: "The most widely stocked mix, with flavors from yellow and devil's food to lemon and spice.", q: "Betty Crocker cake mix", stores: ["heb", "wmt", "amz"] },
+  { brand: "Duncan Hines Signature", size: "15.25 oz", boxes: ["lemon", "white", "chocolate"],
+    note: "Slightly denser crumb. A good pick for cookies and lemon crinkles.", q: "Duncan Hines cake mix", stores: ["heb", "wmt", "amz"] },
+  { brand: "Pillsbury Moist Supreme", size: "15.25 oz", boxes: ["funfetti", "yellow", "white"],
+    note: "Pillsbury started Funfetti, so this is the box for the waffles, dip and popcorn.", q: "Pillsbury Funfetti cake mix", stores: ["heb", "wmt", "amz"] },
+  { brand: "Great Value", size: "15.25 oz", boxes: ["spice", "yellow", "chocolate"],
+    note: "Walmart's store brand and usually the cheapest box. Fine for bars, cobbler and muffins.", q: "Great Value cake mix", stores: ["wmt"] },
+];
+$("shelf").innerHTML = MIXES.map(m => `
+  <article class="mix">
+    <div class="pkg-row" aria-hidden="true">${m.boxes.map(f => `<div class="pkg" style="--flavor:var(--${f})">${FLAVORS[f]}</div>`).join("")}</div>
+    <h3>${m.brand}</h3>
+    <div class="size">Box size · ${m.size}</div>
+    <p>${m.note}</p>
+    <div class="stores">${m.stores.map(s => `<a class="store" href="${STORE[s][1](m.q)}" target="_blank" rel="noopener">${STORE[s][0]}</a>`).join("")}</div>
+  </article>`).join("");
+
+render();
+
+// Suggestions need claude.ai's shared database. Hosted anywhere else, hide them.
+if (!window.claude?.use) {
+  ["suggest", "owner-link"].forEach(id => { $(id).hidden = true; });
+  document.querySelectorAll('a[href="#suggest"]').forEach(a => { a.hidden = true; });
+}
+
+/* ---------- Suggestions and review ---------- */
+// Only the SHA-256 of the code ships with the page. The real lock is the database rule:
+// only the page owner's account can write approved recipes.
+const CODE_HASH = "e010fd1ce1acc173e3b4835b7635f8d4600d774869102adb5cb7b5d7895649ba";
+async function sha256(s) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+}
+const cap = n => window.claude?.use ? Promise.resolve(window.claude.use(n)).catch(() => null) : Promise.resolve(null);
+const msg = (id, text, kind = "") => { const el = $(id); el.textContent = text; el.className = "msg" + (kind ? " " + kind : ""); };
+
+$("f-flavor").innerHTML = Object.entries(FLAVORS).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
+$("f-type").innerHTML = Object.entries(TYPES).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
+
+const STATUS = { pending: "Waiting for review", approved: "Approved", declined: "Not added" };
+function renderMine() {
+  const items = Object.values(mineItems).filter(i => i && i.name).sort((a, b) => (b.at || 0) - (a.at || 0));
+  $("mine").innerHTML = items.length
+    ? items.map(i => { const s = STATUS[i.status] ? i.status : "pending";
+        return `<div class="mine-item"><span>${esc(str(i.name, 80))}</span><span class="status ${s}">${STATUS[s]}</span></div>`; }).join("")
+    : `<p class="msg">Nothing sent yet. What you send shows up here with its review status.</p>`;
+}
+
+$("suggest-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const v = id => $(id).value.trim();
+  const toLines = id => v(id).split("\n").map(s => s.trim()).filter(Boolean);
+  const item = {
+    name: v("f-name"), flavor: v("f-flavor"), type: v("f-type"), time: v("f-time"), yield: v("f-yield"), temp: v("f-temp"),
+    blurb: v("f-blurb"), ing: toLines("f-ing"), steps: toLines("f-steps"), tip: v("f-tip"), by: v("f-by"),
+    status: "pending", at: Date.now(),
+  };
+  if (!item.name) return msg("f-msg", "Give the recipe a name.", "err"), $("f-name").focus();
+  if (item.ing.length < 2) return msg("f-msg", "Add at least two ingredients, one per line.", "err"), $("f-ing").focus();
+  if (!item.steps.length) return msg("f-msg", "Add the steps, one per line.", "err"), $("f-steps").focus();
+  if (!db || !uid) return msg("f-msg", "Sign in to claude.ai and open this page from its link to send suggestions.", "err");
+
+  const rid = "r" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const ref = db.doc("pending/" + uid);
+  $("f-submit").disabled = true; msg("f-msg", "Sending…");
+  try {
+    const snap = await ref.get();
+    if (snap.exists) await ref.update({ items: { [rid]: item } });
+    else await ref.set({ items: { [rid]: item } });
+    $("suggest-form").reset();
+    msg("f-msg", "Sent. It's waiting for review.", "ok");
+  } catch (err) {
+    msg("f-msg", err?.code === "invalid_argument"
+      ? "You can view this page but not add to it. Ask the owner to share it with you as a Contributor."
+      : err?.code === "quota_exceeded" ? "The suggestion box is full right now. Try again after some are reviewed."
+      : "Couldn't send. Check your connection and try again.", "err");
+  } finally { $("f-submit").disabled = false; }
+});
+
+function openReview() {
+  $("review").hidden = false;
+  if (unlocked) showReview();
+  $("review").scrollIntoView();
+}
+$("owner-link").addEventListener("click", openReview);
+
+$("lock-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  if (await sha256($("code").value.trim().toLowerCase()) !== CODE_HASH) return msg("lock-msg", "That code doesn't match.", "err");
+  unlocked = true;
+  try { sessionStorage.setItem("notcake-unlocked", "1"); } catch {}
+  $("code").value = "";
+  showReview();
+});
+
+function showReview() {
+  $("lock-form").hidden = true;
+  $("review-body").hidden = false;
+  render();
+  if (!db) return msg("review-msg", "Sign in to claude.ai to review suggestions.");
+  if (!owner) return msg("review-msg", "The code is right, but approving also needs the page owner's account. Open this page signed in as the owner.", "err");
+  if (reviewSub) return;
+  msg("review-msg", "Loading suggestions…");
+  reviewSub = db.collection("pending").onSnapshot(snap => {
+    pending = [];
+    snap.docs.forEach(d => {
+      Object.entries(d.data()?.items || {}).forEach(([rid, it]) => {
+        if (it && it.status === "pending") pending.push({ ...clean(it, rid), uid: d.id, at: it.at || 0 });
+      });
+    });
+    pending.sort((a, b) => a.at - b.at);
+    renderReview();
+  }, () => msg("review-msg", "Couldn't load suggestions. Reload the page to try again.", "err"));
+}
+
+function renderReview() {
+  msg("review-msg", pending.length ? `${pending.length} waiting. Approved recipes appear for everyone right away.` : "No suggestions waiting. New ones show up here as they arrive.");
+  $("review-list").innerHTML = pending.map(p => cardHTML(p, `
+    <div class="actions">
+      <button class="mini approve" type="button" data-act="approve" data-uid="${esc(p.uid)}" data-rid="${esc(p.id)}">Approve</button>
+      <button class="mini" type="button" data-act="decline" data-uid="${esc(p.uid)}" data-rid="${esc(p.id)}">Decline</button>
+    </div>`)).join("");
+}
+
+$("review-list").addEventListener("click", async e => {
+  const b = e.target.closest("button[data-act]"); if (!b || !db) return;
+  const p = pending.find(x => x.uid === b.dataset.uid && x.id === b.dataset.rid); if (!p) return;
+  b.closest(".actions").querySelectorAll("button").forEach(x => x.disabled = true);
+  try {
+    if (b.dataset.act === "approve") {
+      const { id, uid: from, community: _c, at, ...fields } = p;
+      await db.doc("approved/" + id).set({ ...fields, approvedAt: Date.now() });
+    }
+    await db.doc("pending/" + p.uid).update({ items: { [p.id]: { status: b.dataset.act === "approve" ? "approved" : "declined" } } });
+  } catch {
+    msg("review-msg", "That didn't save. Check your connection and try again.", "err");
+    b.closest(".actions").querySelectorAll("button").forEach(x => x.disabled = false);
+  }
+});
+
+$("grid").addEventListener("click", async e => {
+  const b = e.target.closest("button[data-remove]"); if (!b || !db) return;
+  if (b.dataset.confirm !== "1") { b.dataset.confirm = "1"; b.textContent = "Click again to remove"; return; }
+  b.disabled = true;
+  try { await db.doc("approved/" + b.dataset.remove).delete(); } catch { b.disabled = false; b.textContent = "Couldn't remove. Try again"; }
+});
+
+(async () => {
+  const [d, user] = await Promise.all([cap("db"), cap("user")]);
+  db = d;
+  if (user) {
+    owner = await user.isOwner().catch(() => false);
+    uid = await user.id().catch(() => null);
+  }
+  if (!db) {
+    msg("f-msg", "Sign in to claude.ai and open this page from its link to send suggestions.");
+    if (unlocked && !$("review").hidden) showReview();
+    return;
+  }
+  db.collection("approved").onSnapshot(snap => {
+    community = snap.docs.map(x => clean(x.data() || {}, x.id)).filter(r => r.ing.length && r.steps.length);
+    render();
+  }, () => {});
+  if (uid) db.doc("pending/" + uid).onSnapshot(snap => { mineItems = snap.exists ? (snap.data()?.items || {}) : {}; renderMine(); }, () => {});
+  if (owner) render();
+  if (location.hash === "#review") openReview();
+  else if (!$("review").hidden && unlocked) showReview();
+})();
+if (location.hash === "#review") openReview();
+</script>
+
+</body>
+</html>
