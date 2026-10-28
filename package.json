@@ -2,6 +2,6 @@
   "name": "not-cake",
   "private": true,
   "dependencies": {
-    "@neondatabase/serverless": "1.1.0"
+    "@vercel/blob": "2.8.1"
   }
 }

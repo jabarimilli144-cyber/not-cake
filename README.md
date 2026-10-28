@@ -13,7 +13,7 @@ Twelve recipes that turn a box of cake mix into anything but cake, plus where to
 
 ## Setup on Vercel
 
-1. **Storage** tab → Create Database → **Neon** (Serverless Postgres, Free plan) → connect it to this project. This adds `DATABASE_URL`. The tables are created automatically on first use.
+1. **Storage** tab → Create Database → **Blob** → connect it to this project. Blob is built into Vercel and free on the Hobby plan. This adds `BLOB_READ_WRITE_TOKEN`.
 2. **Settings → Environment Variables** → add `APPROVAL_CODE` with your approval code.
 3. Redeploy.
 

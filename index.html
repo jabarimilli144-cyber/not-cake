@@ -563,10 +563,13 @@ async function apiCall(path, body, code) {
   if (!r.ok) throw Object.assign(new Error(data.error || "Request failed"), { status: r.status });
   return data;
 }
-let mineIds = [];
-try { mineIds = JSON.parse(store("local", "notcake-mine") || "[]").filter(x => typeof x === "string").slice(0, 20); } catch {}
+// What this browser sent: [{id, name, at}]. The server only knows each one's status.
+let mine = [];
+try { mine = JSON.parse(store("local", "notcake-mine") || "[]").filter(x => x && typeof x.id === "string").slice(0, 20); } catch {}
 const loadApproved = () => apiCall("recipes").then(d => setCommunity(d.recipes || []));
-const loadMine = () => mineIds.length ? apiCall("status?ids=" + mineIds.join(",")).then(d => renderMine(d.items || [])) : Promise.resolve(renderMine([]));
+const loadMine = () => mine.length
+  ? apiCall("status?ids=" + mine.map(m => m.id).join(",")).then(d => renderMine(mine.map(m => ({ ...m, status: d.statuses?.[m.id] || "pending" }))))
+  : Promise.resolve(renderMine([]));
 let reviewCode = ON_CLAUDE ? null : store("session", "notcake-code");
 
 $("suggest-form").addEventListener("submit", async e => {
@@ -593,8 +596,8 @@ $("suggest-form").addEventListener("submit", async e => {
       else await ref.set({ items: { [rid]: full } });
     } else {
       const d = await apiCall("suggest", { ...item, website: $("f-website").value });
-      mineIds = [d.id, ...mineIds.filter(x => x !== d.id)].slice(0, 20);
-      store("local", "notcake-mine", JSON.stringify(mineIds));
+      mine = [{ id: d.id, name: item.name, at: Date.now() }, ...mine.filter(m => m.id !== d.id)].slice(0, 20);
+      store("local", "notcake-mine", JSON.stringify(mine));
       loadMine().catch(() => {});
     }
     $("suggest-form").reset();

@@ -1,36 +1,62 @@
 // Shared helpers for the API routes. Files starting with "_" are not routes on Vercel.
+//
+// Storage is Vercel Blob, laid out as:
+//   pending/<id>.json   one file per waiting suggestion (many visitors write at once)
+//   approved.json       every approved recipe (only the owner writes it)
+//   status.json         {id: "approved" | "declined"} for reviewed suggestions (only the owner writes it)
+//   rate/<kind>/<visitor>/<time>.json   markers used to limit how often someone can act
 const crypto = require("crypto");
-const { neon } = require("@neondatabase/serverless");
-
-// Set by Vercel when a Neon Postgres database is connected to the project.
-const DB_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+const { put, get, list, del } = require("@vercel/blob");
 
 const FLAVORS = ["yellow", "white", "chocolate", "lemon", "spice", "funfetti"];
 const TYPES = ["cookies", "bars", "breakfast", "nobake", "dessert"];
 const ID = /^r[0-9a-f]{12}$/;
 
-const configured = () => Boolean(DB_URL);
+// Set by Vercel when a Blob store is connected to the project.
+const configured = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 
-let sql = null;
-let ready = null;
-// Runs a query, creating the tables the first time.
-async function query(text, params = []) {
-  if (!sql) sql = neon(DB_URL);
-  if (!ready) {
-    ready = (async () => {
-      await sql.query(`CREATE TABLE IF NOT EXISTS suggestions (
-        id text PRIMARY KEY,
-        data jsonb NOT NULL,
-        status text NOT NULL DEFAULT 'pending',
-        created_at bigint NOT NULL,
-        approved_at bigint
-      )`);
-      await sql.query(`CREATE TABLE IF NOT EXISTS hits (key text NOT NULL, at timestamptz NOT NULL DEFAULT now())`);
-    })().catch(err => { ready = null; throw err; });
+// A store is either public or private, chosen when it was created. Find out with one test write.
+let access = null;
+async function storeAccess() {
+  if (access) return access;
+  const opts = { contentType: "application/json", addRandomSuffix: false, allowOverwrite: true };
+  try {
+    await put("meta/probe.json", "{}", { ...opts, access: "private" });
+    access = "private";
+  } catch {
+    await put("meta/probe.json", "{}", { ...opts, access: "public" });
+    access = "public";
   }
-  await ready;
-  return sql.query(text, params);
+  return access;
 }
+
+async function write(pathname, value) {
+  await put(pathname, JSON.stringify(value), {
+    access: await storeAccess(), contentType: "application/json",
+    addRandomSuffix: false, allowOverwrite: true, cacheControlMaxAge: 60,
+  });
+}
+
+async function read(pathname, fallback) {
+  let r;
+  try { r = await get(pathname, { access: await storeAccess(), useCache: false }); }
+  catch (err) { if (err && err.name === "BlobNotFoundError") return fallback; throw err; }
+  if (!r || r.statusCode !== 200) return fallback;
+  try { return JSON.parse(await new Response(r.stream).text()); } catch { return fallback; }
+}
+
+async function listAll(prefix) {
+  const blobs = [];
+  let cursor;
+  do {
+    const page = await list({ prefix, cursor, limit: 1000 });
+    blobs.push(...page.blobs);
+    cursor = page.hasMore ? page.cursor : undefined;
+  } while (cursor);
+  return blobs;
+}
+
+const remove = pathnames => (pathnames.length ? del(pathnames) : Promise.resolve());
 
 const text = (v, n) => (typeof v === "string" ? v.trim().slice(0, n) : "");
 const lines = (v, max) => (Array.isArray(v) ? v.map(x => text(x, 300)).filter(Boolean).slice(0, max) : []);
@@ -50,15 +76,15 @@ function cleanRecipe(b = {}) {
 const visitor = req => crypto.createHash("sha256")
   .update(String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() || "unknown").digest("hex").slice(0, 32);
 
-// How many times this key was recorded in the last hour.
-async function recentHits(key) {
-  const rows = await query(`SELECT count(*)::int AS n FROM hits WHERE key = $1 AND at > now() - interval '1 hour'`, [key]);
-  return rows[0].n;
+const HOUR = 3600 * 1000;
+// How many times this visitor did <kind> in the last hour. Clears out older markers.
+async function recentHits(kind, who) {
+  const blobs = await listAll(`rate/${kind}/${who}/`);
+  const cutoff = Date.now() - HOUR;
+  await remove(blobs.filter(b => new Date(b.uploadedAt).getTime() < cutoff).map(b => b.pathname));
+  return blobs.filter(b => new Date(b.uploadedAt).getTime() >= cutoff).length;
 }
-async function recordHit(key) {
-  await query(`INSERT INTO hits (key) VALUES ($1)`, [key]);
-  if (Math.random() < 0.05) await query(`DELETE FROM hits WHERE at < now() - interval '1 day'`);
-}
+const recordHit = (kind, who) => write(`rate/${kind}/${who}/${Date.now()}-${crypto.randomBytes(3).toString("hex")}.json`, {});
 
 // Compares hashes so the check takes the same time whatever was typed. Not case-sensitive.
 function codeMatches(given) {
@@ -68,6 +94,4 @@ function codeMatches(given) {
   return crypto.timingSafeEqual(h(given), h(want));
 }
 
-const recipeRow = r => ({ ...r.data, id: r.id, at: Number(r.created_at), approvedAt: r.approved_at && Number(r.approved_at) });
-
-module.exports = { configured, query, cleanRecipe, visitor, recentHits, recordHit, codeMatches, recipeRow, ID };
+module.exports = { configured, write, read, listAll, remove, cleanRecipe, visitor, recentHits, recordHit, codeMatches, ID };
