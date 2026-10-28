@@ -12,7 +12,7 @@ const FILE = "community.json";
 const LINK_DAYS = 14;
 
 const text = (v, n) => (typeof v === "string" ? v.trim().slice(0, n) : "");
-const lines = (v, max) => (Array.isArray(v) ? v.map(x => text(x, 300)).filter(Boolean).slice(0, max) : []);
+const lines = (v, max) => (Array.isArray(v) ? v.map(x => text(x, 1200)).filter(Boolean).slice(0, max) : []);
 
 function cleanRecipe(b = {}) {
   return {

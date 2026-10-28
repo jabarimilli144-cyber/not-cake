@@ -398,7 +398,7 @@ footer { padding-block: 1rem 3rem; }
 
 <script>
 const FLAVORS = { yellow: "Yellow", white: "White", chocolate: "Chocolate", lemon: "Lemon", spice: "Spice", funfetti: "Funfetti", brownie: "Brownie" };
-const TYPES = { cookies: "Cookies", bars: "Bars", breakfast: "Breakfast", nobake: "No-bake", dessert: "Cobbler" };
+const TYPES = { cookies: "Cookies", bars: "Bars", breakfast: "Breakfast", nobake: "No-bake", dessert: "Desserts" };
 
 const RECIPES = [
   { name: "Three-Ingredient Cake Mix Cookies", flavor: "yellow", type: "cookies", time: "20 min", yield: "24 cookies", temp: "350 °F",
@@ -488,7 +488,7 @@ $("clear").addEventListener("click", () => { state.flavor = state.type = null; s
 
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const str = (v, n) => String(v ?? "").trim().slice(0, n);
-const lines = (v, max) => (Array.isArray(v) ? v : []).map(x => str(x, 300)).filter(Boolean).slice(0, max);
+const lines = (v, max) => (Array.isArray(v) ? v : []).map(x => str(x, 1200)).filter(Boolean).slice(0, max);
 
 // Community recipes come from other people, so every field is cleaned and escaped before it is shown.
 function clean(d, id) {
@@ -741,7 +741,7 @@ function fromMeal(m) {
       : /pancake|waffle|bun|doughnut|donut/.test(name) ? "breakfast" : /ice cream|mousse|fool|mess|truffle|smoothie|no-churn/.test(name) ? "nobake" : "dessert",
     time: "—", yield: "—", temp: /oven|bake/i.test(m.strInstructions || "") ? "Oven" : "No oven",
     blurb: `${m.strArea && m.strArea !== "Unknown" ? m.strArea + " dessert" : "A dessert"} from TheMealDB, an online recipe database.`,
-    ing: ing.slice(0, 30), steps: steps.map(t => str(t, 300)).slice(0, 30), tip: "", by: "TheMealDB",
+    ing: ing.slice(0, 30), steps: steps.map(t => str(t, 1200)).slice(0, 30), tip: "", by: "TheMealDB",
     img: !ON_CLAUDE && /^https:\/\/www\.themealdb\.com\//.test(m.strMealThumb || "") ? m.strMealThumb + "/preview" : "",
     source: /^https?:\/\//.test(m.strSource || "") ? m.strSource : `https://www.themealdb.com/meal/${m.idMeal}`,
   };
