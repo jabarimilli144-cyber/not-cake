@@ -8,7 +8,7 @@
 const crypto = require("crypto");
 const { put, get, list, del } = require("@vercel/blob");
 
-const FLAVORS = ["yellow", "white", "chocolate", "lemon", "spice", "funfetti"];
+const FLAVORS = ["yellow", "white", "chocolate", "lemon", "spice", "funfetti", "brownie"];
 const TYPES = ["cookies", "bars", "breakfast", "nobake", "dessert"];
 const ID = /^r[0-9a-f]{12}$/;
 

@@ -25,7 +25,7 @@
   --glow: #dcc8ff;
   --amber: #ffc46b;        /* city lights on the horizon */
   --horizon: #c6d4c2;      /* last light in the sky */
-  --yellow: #f2b632; --white: #d4cbe6; --chocolate: #a8664a; --lemon: #e4d43a; --spice: #d07a35; --funfetti: #ef7cc0;
+  --yellow: #f2b632; --white: #d4cbe6; --chocolate: #a8664a; --lemon: #e4d43a; --spice: #d07a35; --funfetti: #ef7cc0; --brownie: #8a5236;
   --display: "Instrument Serif", "Iowan Old Style", Georgia, serif;
   --body: "Figtree", system-ui, -apple-system, sans-serif;
   --mono: "DM Mono", ui-monospace, Menlo, monospace;
@@ -351,7 +351,7 @@ footer { padding-block: 1rem 3rem; }
 </footer>
 
 <script>
-const FLAVORS = { yellow: "Yellow", white: "White", chocolate: "Chocolate", lemon: "Lemon", spice: "Spice", funfetti: "Funfetti" };
+const FLAVORS = { yellow: "Yellow", white: "White", chocolate: "Chocolate", lemon: "Lemon", spice: "Spice", funfetti: "Funfetti", brownie: "Brownie" };
 const TYPES = { cookies: "Cookies", bars: "Bars", breakfast: "Breakfast", nobake: "No-bake", dessert: "Cobbler" };
 
 const RECIPES = [
@@ -390,6 +390,11 @@ const RECIPES = [
     ing: ["1 cup cake mix", "1 cup all-purpose flour", "1 tsp baking powder", "1 large egg", "1 cup milk", "1 tbsp melted butter"],
     steps: ["Whisk cake mix, flour and baking powder.", "Add egg, milk and butter; stir until barely combined.", "Pour ¼-cup portions onto a buttered griddle over medium heat.", "Flip when bubbles pop on top, about 2 minutes per side."],
     tip: "Lower heat than usual. The extra sugar browns fast." },
+  { name: "Brownie Box Pancakes", flavor: "brownie", type: "breakfast", time: "20 min", yield: "10 pancakes", temp: "Med-low griddle",
+    blurb: "Fudgy chocolate pancakes from a box of brownie mix. Dessert for breakfast.",
+    ing: ["1 cup brownie mix", "1 cup all-purpose flour", "2 tsp baking powder", "1 large egg", "1 cup milk", "2 tbsp melted butter", "½ cup chocolate chips (optional)"],
+    steps: ["Whisk brownie mix, flour and baking powder.", "Add egg, milk and butter; stir until just combined. Fold in chips.", "Pour ¼-cup portions onto a buttered griddle over medium-low heat.", "Flip when the edges look set and bubbles form, about 2–3 minutes per side."],
+    tip: "Keep the heat low. Chocolate scorches before the middle cooks." },
   { name: "Cake Mix Cinnamon Rolls", flavor: "yellow", type: "breakfast", time: "3 hr", yield: "24 rolls", temp: "350 °F",
     blurb: "The mix makes a rich, tender yeast dough. Big batch.",
     ing: ["1 box yellow cake mix", "5 cups all-purpose flour", "2 packets (4½ tsp) instant yeast", "2½ cups warm water (110 °F)", "½ cup softened butter, 1 cup brown sugar, 2 tbsp cinnamon for filling"],
