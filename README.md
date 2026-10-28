@@ -1,20 +1,24 @@
 # Not Cake
 
-Twelve recipes that turn a box of cake mix into anything but cake, plus where to buy the boxes, and a suggestion box where visitors send recipes for approval.
+Recipes that turn a box of cake mix into anything but cake, plus where to buy the boxes, a recipe chat, and a suggestion box. New recipes go live only after the owner approves them by email.
 
 ## Files
 
 - `index.html`, `dusk.jpg`: the site.
-- `api/`: Vercel functions for the suggestion box.
-  - `recipes.js`: approved recipes.
-  - `suggest.js`: send a suggestion (max 5 per hour per visitor).
-  - `status.js`: a visitor's own suggestions.
-  - `review.js`: list, approve, decline or remove. Needs the approval code.
+- `community.json`: approved community recipes. The approve link adds to it through the GitHub API, and Vercel redeploys.
+- `api/`: Vercel functions.
+  - `generate.js`: the recipe chat (Claude).
+  - `submit.js`: emails the owner a recipe with a signed approval link (Resend).
+  - `approve.js`: the approval page. Adding a recipe commits it to `community.json`.
+  - `health.js`: tells the page which features are set up.
 
-## Setup on Vercel
+## Setup on Vercel (Settings → Environment Variables)
 
-1. **Storage** tab → Create Database → **Blob** → connect it to this project. Blob is built into Vercel and free on the Hobby plan. This adds `BLOB_READ_WRITE_TOKEN`.
-2. **Settings → Environment Variables** → add `APPROVAL_CODE` with your approval code.
-3. Redeploy.
+| Name | What it is |
+| --- | --- |
+| `ANTHROPIC_API_KEY` | From console.anthropic.com. Turns on the recipe chat. |
+| `RESEND_API_KEY` | From resend.com. Sends the approval emails. |
+| `OWNER_EMAIL` | Where approval emails go. With Resend's test sender this must be the email you signed up to Resend with. |
+| `GITHUB_TOKEN` | Fine-grained token with Contents: Read and write on this repo only. Adds approved recipes and signs approval links. |
 
-Until both are set, the suggestion box is hidden and the rest of the site works normally. The approval code is checked only on the server, never in the page.
+Redeploy after adding them. Without them the chat and suggestion box stay hidden and the rest of the site works normally.

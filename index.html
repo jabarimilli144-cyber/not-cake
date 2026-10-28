@@ -238,6 +238,26 @@ button.btn:disabled { opacity: .5; cursor: default; }
 .owner-link { background: none; border: 0; color: var(--muted); font: 500 .75rem/1 var(--mono); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; padding: .3rem 0; margin-top: 1rem; }
 @media (max-width: 800px) { .suggest-grid { grid-template-columns: minmax(0, 1fr); } }
 
+/* Recipe chat */
+.chat { max-width: 48rem; }
+.chat-log { display: grid; gap: .8rem; max-height: min(70vh, 44rem); overflow-y: auto; padding-right: .25rem; }
+.bubble { max-width: 90%; padding: .75rem 1rem; border-radius: 16px; display: grid; gap: .7rem; min-width: 0; }
+.bubble.bot { background: var(--haze); border-bottom-left-radius: 4px; justify-self: start; }
+.bubble.me { background: var(--glow); color: var(--night); border-bottom-right-radius: 4px; justify-self: end; font-weight: 600; }
+.bubble .card { background: var(--dusk); }
+.bubble .small { font-size: .85rem; color: var(--muted); }
+.found { display: flex; flex-wrap: wrap; gap: .4rem; }
+.typing { animation: none; }
+@media (prefers-reduced-motion: no-preference) { .typing { animation: breathe 1.4s ease-in-out infinite; } }
+@keyframes breathe { 50% { opacity: .45; } }
+.err-text { color: #ffa3b1; }
+.chat-ideas { display: flex; flex-wrap: wrap; gap: .45rem; }
+.chat-form { display: flex; gap: .6rem; }
+.chat-form input { flex: 1 1 auto; min-width: 0; font: 400 1rem/1.4 var(--body); color: var(--ink); background: var(--haze);
+  border: 1px solid var(--rule); border-radius: 999px; padding: .7rem 1rem; }
+.chat-form input::placeholder { color: var(--muted); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
 footer { padding-block: 1rem 3rem; }
 .box-note { font-size: .9rem; color: var(--muted); max-width: 46rem; border-top: 1px solid var(--rule); padding-top: 1.25rem; }
 .box-note b { color: var(--horizon); font-weight: 600; }
@@ -257,6 +277,7 @@ footer { padding-block: 1rem 3rem; }
     <p>A box of cake mix is flour, sugar, leavening and flavor already measured out. Turn it into <strong>cookies, bars, waffles, cinnamon rolls, dip and popcorn</strong> instead.</p>
     <div class="hero-cta">
       <a class="btn" href="#recipes">Browse <span id="n-recipes">12</span> recipes</a>
+      <a class="btn ghost" href="#chat">Ask the recipe chat</a>
       <a class="btn ghost" href="#suggest">Suggest a recipe</a>
       <a class="btn ghost" href="#buy">Where to buy a box</a>
     </div>
@@ -271,7 +292,7 @@ footer { padding-block: 1rem 3rem; }
         <label class="label" for="search" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Search recipes</label>
         <input id="search" type="search" placeholder="Search: cream cheese, waffle iron…" autocomplete="off">
       </div>
-      <nav class="tabs" aria-label="Sections"><a href="#recipes">Recipes</a><a href="#suggest">Suggest</a><a href="#buy">Where to buy</a></nav>
+      <nav class="tabs" aria-label="Sections"><a href="#recipes">Recipes</a><a href="#chat">Ask</a><a href="#suggest">Suggest</a><a href="#buy">Where to buy</a></nav>
     </div>
     <div class="chips" id="chips" role="group" aria-label="Filter by mix flavor and recipe type"></div>
   </div>
@@ -284,6 +305,29 @@ footer { padding-block: 1rem 3rem; }
   </div>
   <div class="grid" id="grid" aria-live="polite"></div>
 </main>
+
+<section id="chat" class="inner panel-wrap" aria-labelledby="chat-title">
+  <div class="panel-head">
+    <div class="label">Recipe chat</div>
+    <h2 id="chat-title">Ask for a recipe</h2>
+    <p>Say what mix you have and what you're craving. It checks the recipes already here, then writes a new one. Like it? Send it for approval, and it joins the site once it's approved.</p>
+  </div>
+  <div class="panel chat">
+    <div class="chat-log" id="chat-log" aria-live="polite">
+      <div class="bubble bot"><p>What should we make? Tell me the mix in your pantry, or what you're in the mood for.</p></div>
+    </div>
+    <div class="chat-ideas" id="chat-ideas">
+      <button class="mini" type="button">Lemon mix, no oven, for a party</button>
+      <button class="mini" type="button">Something for breakfast with chocolate mix</button>
+      <button class="mini" type="button">Funfetti cookies but chewier</button>
+    </div>
+    <form class="chat-form" id="chat-form">
+      <label for="chat-input" class="sr-only">What would you like to make?</label>
+      <input id="chat-input" maxlength="300" placeholder="e.g. spice mix and apples, no eggs" autocomplete="off">
+      <button class="btn" type="submit" id="chat-send">Ask</button>
+    </form>
+  </div>
+</section>
 
 <section id="suggest" class="inner panel-wrap" aria-labelledby="suggest-title">
   <div class="panel-head">
@@ -523,10 +567,10 @@ $("shelf").innerHTML = MIXES.map(m => `
 
 render();
 
-/* ---------- Suggestions and review ---------- */
+/* ---------- Suggestions, review and the recipe chat ---------- */
 // Two backends. As a claude.ai artifact the page uses claude.ai's shared database, and only the
-// owner's account can approve. Hosted on Vercel it uses this site's /api functions, which check
-// the approval code on the server.
+// owner's account can approve, after entering the code. Hosted on Vercel it uses this site's /api
+// functions: suggestions are emailed to the owner, and approving one adds it to community.json.
 const ON_CLAUDE = !!window.claude?.use;
 // claude.ai mode only: just the SHA-256 of the code ships with the page; the database rule is the real lock.
 const CODE_HASH = "e010fd1ce1acc173e3b4835b7635f8d4600d774869102adb5cb7b5d7895649ba";
@@ -541,10 +585,9 @@ const store = (kind, key, val) => { try { const s = kind === "session" ? session
 $("f-flavor").innerHTML = Object.entries(FLAVORS).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
 $("f-type").innerHTML = Object.entries(TYPES).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
 
-function hideSuggestions() {
-  ["suggest", "owner-link", "review"].forEach(id => { $(id).hidden = true; });
-  document.querySelectorAll('a[href="#suggest"]').forEach(a => { a.hidden = true; });
-}
+const hide = (...ids) => ids.forEach(id => { $(id).hidden = true; });
+const hideLinks = hash => document.querySelectorAll(`a[href="${hash}"]`).forEach(a => { a.hidden = true; });
+const showLinks = hash => document.querySelectorAll(`a[href="${hash}"]`).forEach(a => { a.hidden = false; });
 
 const STATUS = { pending: "Waiting for review", approved: "Approved", declined: "Not added" };
 function renderMine(items) {
@@ -560,22 +603,30 @@ function setCommunity(rows) {
 }
 
 /* Vercel backend */
-async function apiCall(path, body, code) {
-  const opts = body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : {};
-  if (code) opts.headers = { ...opts.headers, "x-approval-code": code };
-  const r = await fetch("/api/" + path, opts);
+async function api(path, body) {
+  const r = await fetch("/api/" + path, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : {});
   const data = await r.json().catch(() => ({}));
   if (!r.ok) throw Object.assign(new Error(data.error || "Request failed"), { status: r.status });
   return data;
 }
-// What this browser sent: [{id, name, at}]. The server only knows each one's status.
+// What this browser sent: [{id, name, at}]. A suggestion counts as approved once it's in community.json.
 let mine = [];
 try { mine = JSON.parse(store("local", "notcake-mine") || "[]").filter(x => x && typeof x.id === "string").slice(0, 20); } catch {}
-const loadApproved = () => apiCall("recipes").then(d => setCommunity(d.recipes || []));
-const loadMine = () => mine.length
-  ? apiCall("status?ids=" + mine.map(m => m.id).join(",")).then(d => renderMine(mine.map(m => ({ ...m, status: d.statuses?.[m.id] || "pending" }))))
-  : Promise.resolve(renderMine([]));
-let reviewCode = ON_CLAUDE ? null : store("session", "notcake-code");
+function loadMine() {
+  const live = new Set(community.map(r => r.id));
+  renderMine(mine.map(m => ({ ...m, status: live.has(m.id) ? "approved" : "pending" })));
+}
+async function sendForApproval(recipe, source) {
+  const d = await api("submit", { recipe, source, website: $("f-website").value });
+  mine = [{ id: d.id, name: recipe.name, at: Date.now() }, ...mine.filter(m => m.id !== d.id)].slice(0, 20);
+  store("local", "notcake-mine", JSON.stringify(mine));
+  loadMine();
+}
+const sendError = err =>
+  err?.code === "invalid_argument" ? "You can view this page but not add to it. Ask the owner to share it with you as a Contributor."
+  : err?.code === "quota_exceeded" ? "The suggestion box is full right now. Try again after some are reviewed."
+  : err?.status === 429 || err?.status === 400 || err?.status === 503 ? err.message
+  : "Couldn't send. Check your connection and try again.";
 
 $("suggest-form").addEventListener("submit", async e => {
   e.preventDefault();
@@ -600,23 +651,82 @@ $("suggest-form").addEventListener("submit", async e => {
       if (snap.exists) await ref.update({ items: { [rid]: full } });
       else await ref.set({ items: { [rid]: full } });
     } else {
-      const d = await apiCall("suggest", { ...item, website: $("f-website").value });
-      mine = [{ id: d.id, name: item.name, at: Date.now() }, ...mine.filter(m => m.id !== d.id)].slice(0, 20);
-      store("local", "notcake-mine", JSON.stringify(mine));
-      loadMine().catch(() => {});
+      await sendForApproval(item, "form");
     }
     $("suggest-form").reset();
     msg("f-msg", "Sent. It's waiting for review.", "ok");
   } catch (err) {
-    msg("f-msg",
-      err?.code === "invalid_argument" ? "You can view this page but not add to it. Ask the owner to share it with you as a Contributor."
-      : err?.code === "quota_exceeded" || err?.status === 507 ? "The suggestion box is full right now. Try again after some are reviewed."
-      : err?.status === 429 ? "You've sent several suggestions already. Try again in an hour."
-      : err?.status === 400 ? err.message
-      : "Couldn't send. Check your connection and try again.", "err");
+    msg("f-msg", sendError(err), "err");
   } finally { $("f-submit").disabled = false; }
 });
 
+/* Recipe chat (Vercel only) */
+const chatTurns = []; // [{role, content}] sent to the server for follow-ups like "make it chocolate"
+let chatRecipes = [];  // recipes the chat wrote, by index
+const STOP = new Set("the and for with that this some want make made something like using use have just any can you what from into out are was not but".split(" "));
+function findExisting(q) {
+  const words = q.toLowerCase().match(/[a-z]{3,}/g)?.filter(w => !STOP.has(w)) || [];
+  if (!words.length) return [];
+  return [...RECIPES, ...community]
+    .map(r => {
+      const hay = [r.name, r.blurb, FLAVORS[r.flavor], TYPES[r.type], ...r.ing].join(" ").toLowerCase();
+      return { r, score: words.filter(w => hay.includes(w.replace(/s$/, ""))).length };
+    })
+    .filter(x => x.score > 0).sort((a, b) => b.score - a.score).slice(0, 3).map(x => x.r);
+}
+function bubble(role, html) {
+  const el = document.createElement("div");
+  el.className = "bubble " + role;
+  el.innerHTML = html;
+  $("chat-log").appendChild(el);
+  el.scrollIntoView({ block: "nearest" });
+  return el;
+}
+async function ask(q) {
+  q = q.trim().slice(0, 300);
+  if (!q) return;
+  $("chat-input").value = "";
+  $("chat-ideas").hidden = true;
+  bubble("me", esc(q));
+  chatTurns.push({ role: "user", content: q });
+
+  const found = findExisting(q);
+  if (found.length) {
+    bubble("bot", `<p class="small">Already on the site:</p><div class="found">${found.map(r =>
+      `<button class="mini" type="button" data-find="${esc(r.name)}">${esc(r.name)}</button>`).join("")}</div>`);
+  }
+  const wait = bubble("bot", `<p class="small typing">Writing a recipe…</p>`);
+  $("chat-send").disabled = true;
+  try {
+    const d = await api("generate", { messages: chatTurns });
+    const i = chatRecipes.push(d.recipe) - 1;
+    wait.innerHTML = `<p>${esc(d.reply || "Here's one.")}</p>` + (d.recipe ? cardHTML(d.recipe, `
+      <div class="actions" data-chat="${i}">
+        ${canSubmit ? `<button class="mini approve" type="button" data-send="${i}">Send for approval</button>` : ""}
+        <span class="msg"></span>
+      </div>`) : "");
+    chatTurns.push({ role: "assistant", content: (d.reply || "") + (d.recipe ? `\n[Recipe: ${d.recipe.name}. ${d.recipe.ing.join("; ")}]` : "") });
+  } catch (err) {
+    wait.innerHTML = `<p class="err-text">${esc(err.status ? err.message : "Couldn't reach the recipe chat. Check your connection and try again.")}</p>`;
+    chatTurns.pop();
+  } finally { $("chat-send").disabled = false; }
+}
+$("chat-form").addEventListener("submit", e => { e.preventDefault(); ask($("chat-input").value); });
+$("chat-ideas").addEventListener("click", e => { const b = e.target.closest("button"); if (b) ask(b.textContent); });
+$("chat-log").addEventListener("click", async e => {
+  const f = e.target.closest("button[data-find]");
+  if (f) { $("search").value = f.dataset.find; state.q = f.dataset.find; state.flavor = state.type = null; render(); $("recipes").scrollIntoView(); return; }
+  const b = e.target.closest("button[data-send]"); if (!b) return;
+  const note = b.parentElement.querySelector(".msg");
+  b.disabled = true; note.textContent = "Sending…"; note.className = "msg";
+  try {
+    await sendForApproval(chatRecipes[b.dataset.send], "chat");
+    b.remove(); note.textContent = "Sent. It's added once it's approved."; note.className = "msg ok";
+  } catch (err) { b.disabled = false; note.textContent = sendError(err); note.className = "msg err"; }
+});
+let canSubmit = false;
+
+/* Owner review (claude.ai only; on Vercel the owner approves from the email) */
 function openReview() {
   $("review").hidden = false;
   if (unlocked) showReview();
@@ -626,21 +736,8 @@ $("owner-link").addEventListener("click", openReview);
 
 $("lock-form").addEventListener("submit", async e => {
   e.preventDefault();
-  const code = $("code").value.trim();
-  if (ON_CLAUDE) {
-    if (await sha256(code.toLowerCase()) !== CODE_HASH) return msg("lock-msg", "That code doesn't match.", "err");
-    store("session", "notcake-unlocked", "1");
-  } else {
-    msg("lock-msg", "Checking…");
-    try { await loadPending(code); }
-    catch (err) {
-      return msg("lock-msg", err.status === 401 ? "That code doesn't match."
-        : err.status === 429 ? "Too many wrong tries. Wait an hour and try again."
-        : err.status === 503 ? err.message : "Couldn't check the code. Try again.", "err");
-    }
-    reviewCode = code;
-    store("session", "notcake-code", code);
-  }
+  if (await sha256($("code").value.trim().toLowerCase()) !== CODE_HASH) return msg("lock-msg", "That code doesn't match.", "err");
+  store("session", "notcake-unlocked", "1");
   unlocked = true;
   $("code").value = ""; msg("lock-msg", "");
   showReview();
@@ -650,7 +747,6 @@ function showReview() {
   $("lock-form").hidden = true;
   $("review-body").hidden = false;
   render();
-  if (!ON_CLAUDE) { if (!pending.length) loadPending(reviewCode).catch(reviewFailed); return; }
   if (!db) return msg("review-msg", "Sign in to claude.ai to review suggestions.");
   if (!owner) return msg("review-msg", "The code is right, but approving also needs the page owner's account. Open this page signed in as the owner.", "err");
   if (reviewSub) return;
@@ -667,66 +763,42 @@ function showReview() {
   }, () => msg("review-msg", "Couldn't load suggestions. Reload the page to try again.", "err"));
 }
 
-async function loadPending(code) {
-  const d = await apiCall("review", { action: "list" }, code);
-  pending = (d.pending || []).map(p => ({ ...clean(p, p.id), at: p.at || 0 })).sort((a, b) => a.at - b.at);
-  renderReview();
-}
-function reviewFailed(err) {
-  if (err?.status === 401) {
-    unlocked = false; reviewCode = null; store("session", "notcake-code", null);
-    $("lock-form").hidden = false; $("review-body").hidden = true; render();
-    return msg("lock-msg", "The approval code changed. Enter it again.", "err");
-  }
-  msg("review-msg", "That didn't save. Check your connection and try again.", "err");
-}
-
 function renderReview() {
   msg("review-msg", pending.length ? `${pending.length} waiting. Approved recipes appear for everyone right away.` : "No suggestions waiting. New ones show up here as they arrive.");
   $("review-list").innerHTML = pending.map(p => cardHTML(p, `
     <div class="actions">
-      <button class="mini approve" type="button" data-act="approve" data-uid="${esc(p.uid || "")}" data-rid="${esc(p.id)}">Approve</button>
-      <button class="mini" type="button" data-act="decline" data-uid="${esc(p.uid || "")}" data-rid="${esc(p.id)}">Decline</button>
+      <button class="mini approve" type="button" data-act="approve" data-uid="${esc(p.uid)}" data-rid="${esc(p.id)}">Approve</button>
+      <button class="mini" type="button" data-act="decline" data-uid="${esc(p.uid)}" data-rid="${esc(p.id)}">Decline</button>
     </div>`)).join("");
 }
 
 $("review-list").addEventListener("click", async e => {
-  const b = e.target.closest("button[data-act]"); if (!b) return;
-  const p = pending.find(x => (x.uid || "") === b.dataset.uid && x.id === b.dataset.rid); if (!p) return;
+  const b = e.target.closest("button[data-act]"); if (!b || !db) return;
+  const p = pending.find(x => x.uid === b.dataset.uid && x.id === b.dataset.rid); if (!p) return;
   const btns = b.closest(".actions").querySelectorAll("button");
   btns.forEach(x => x.disabled = true);
-  const act = b.dataset.act;
   try {
-    if (ON_CLAUDE) {
-      if (!db) return;
-      if (act === "approve") {
-        const { id, uid: from, community: _c, at, ...fields } = p;
-        await db.doc("approved/" + id).set({ ...fields, approvedAt: Date.now() });
-      }
-      await db.doc("pending/" + p.uid).update({ items: { [p.id]: { status: act === "approve" ? "approved" : "declined" } } });
-    } else {
-      await apiCall("review", { action: act, id: p.id }, reviewCode);
-      await loadPending(reviewCode);
-      if (act === "approve") await loadApproved();
+    if (b.dataset.act === "approve") {
+      const { id, uid: from, community: _c, at, ...fields } = p;
+      await db.doc("approved/" + id).set({ ...fields, approvedAt: Date.now() });
     }
-  } catch (err) {
+    await db.doc("pending/" + p.uid).update({ items: { [p.id]: { status: b.dataset.act === "approve" ? "approved" : "declined" } } });
+  } catch {
     btns.forEach(x => x.disabled = false);
-    if (ON_CLAUDE) msg("review-msg", "That didn't save. Check your connection and try again.", "err");
-    else reviewFailed(err);
+    msg("review-msg", "That didn't save. Check your connection and try again.", "err");
   }
 });
 
 $("grid").addEventListener("click", async e => {
-  const b = e.target.closest("button[data-remove]"); if (!b) return;
+  const b = e.target.closest("button[data-remove]"); if (!b || !db) return;
   if (b.dataset.confirm !== "1") { b.dataset.confirm = "1"; b.textContent = "Click again to remove"; return; }
   b.disabled = true;
-  try {
-    if (ON_CLAUDE) await db.doc("approved/" + b.dataset.remove).delete();
-    else { await apiCall("review", { action: "remove", id: b.dataset.remove }, reviewCode); await loadApproved(); }
-  } catch { b.disabled = false; b.textContent = "Couldn't remove. Try again"; }
+  try { await db.doc("approved/" + b.dataset.remove).delete(); }
+  catch { b.disabled = false; b.textContent = "Couldn't remove. Try again"; }
 });
 
 if (ON_CLAUDE) {
+  hide("chat"); hideLinks("#chat");
   unlocked = store("session", "notcake-unlocked") === "1";
   (async () => {
     const [d, user] = await Promise.all([cap("db"), cap("user")]);
@@ -741,16 +813,25 @@ if (ON_CLAUDE) {
       return;
     }
     db.collection("approved").onSnapshot(snap => setCommunity(snap.docs.map(x => ({ ...(x.data() || {}), id: x.id }))), () => {});
-    if (uid) db.doc("pending/" + uid).onSnapshot(snap => { mineItems = snap.exists ? (snap.data()?.items || {}) : {}; renderMine(Object.values(mineItems)); }, () => {});
+    if (uid) db.doc("pending/" + uid).onSnapshot(snap => renderMine(Object.values(snap.exists ? (snap.data()?.items || {}) : {})), () => {});
     if (owner) render();
     if (!$("review").hidden && unlocked) showReview();
   })();
+  if (location.hash === "#review") openReview();
 } else {
-  unlocked = !!reviewCode;
-  // If this host has no working /api (plain static hosting, or storage not connected yet), hide the feature.
-  loadApproved().then(() => loadMine().catch(() => {})).catch(hideSuggestions);
+  hide("owner-link", "review", "chat", "suggest"); hideLinks("#chat"); hideLinks("#suggest");
+  // Approved community recipes ship with the site as a plain file.
+  fetch("/community.json?v=" + Date.now())
+    .then(r => (r.ok ? r.json() : { recipes: [] }))
+    .then(d => { setCommunity(Array.isArray(d.recipes) ? d.recipes.map(r => ({ ...r, id: r.id })) : []); loadMine(); })
+    .catch(() => {});
+  // Show the chat and the suggestion form only once the server says they're set up.
+  api("health").then(h => {
+    canSubmit = !!h.submit;
+    if (h.generate) { $("chat").hidden = false; showLinks("#chat"); }
+    if (h.submit) { $("suggest").hidden = false; showLinks("#suggest"); }
+  }).catch(() => {});
 }
-if (location.hash === "#review") openReview();
 </script>
 
 </body>
