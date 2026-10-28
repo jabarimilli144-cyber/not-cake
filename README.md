@@ -13,7 +13,7 @@ Twelve recipes that turn a box of cake mix into anything but cake, plus where to
 
 ## Setup on Vercel
 
-1. **Storage** tab → Create Database → **Upstash for Redis** (free plan) → connect it to this project. This adds `KV_REST_API_URL` and `KV_REST_API_TOKEN`.
+1. **Storage** tab → Create Database → **Neon** (Serverless Postgres, Free plan) → connect it to this project. This adds `DATABASE_URL`. The tables are created automatically on first use.
 2. **Settings → Environment Variables** → add `APPROVAL_CODE` with your approval code.
 3. Redeploy.
 

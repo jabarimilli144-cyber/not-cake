@@ -1,40 +1,35 @@
 // Shared helpers for the API routes. Files starting with "_" are not routes on Vercel.
 const crypto = require("crypto");
+const { neon } = require("@neondatabase/serverless");
 
-// Set by Vercel when an Upstash Redis database is connected to the project.
-const REDIS_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-const REDIS_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+// Set by Vercel when a Neon Postgres database is connected to the project.
+const DB_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
 const FLAVORS = ["yellow", "white", "chocolate", "lemon", "spice", "funfetti"];
 const TYPES = ["cookies", "bars", "breakfast", "nobake", "dessert"];
 const ID = /^r[0-9a-f]{12}$/;
 
-const configured = () => Boolean(REDIS_URL && REDIS_TOKEN);
+const configured = () => Boolean(DB_URL);
 
-async function redis(...command) {
-  const r = await fetch(REDIS_URL, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${REDIS_TOKEN}`, "Content-Type": "application/json" },
-    body: JSON.stringify(command),
-  });
-  const data = await r.json();
-  if (!r.ok || data.error) throw new Error(data.error || `Redis returned ${r.status}`);
-  return data.result;
-}
-
-// HGETALL comes back as [field, value, field, value, ...].
-async function hashValues(key) {
-  const flat = (await redis("HGETALL", key)) || [];
-  const out = [];
-  for (let i = 0; i < flat.length; i += 2) {
-    const value = parse(flat[i + 1]);
-    if (value) out.push({ ...value, id: flat[i] });
+let sql = null;
+let ready = null;
+// Runs a query, creating the tables the first time.
+async function query(text, params = []) {
+  if (!sql) sql = neon(DB_URL);
+  if (!ready) {
+    ready = (async () => {
+      await sql.query(`CREATE TABLE IF NOT EXISTS suggestions (
+        id text PRIMARY KEY,
+        data jsonb NOT NULL,
+        status text NOT NULL DEFAULT 'pending',
+        created_at bigint NOT NULL,
+        approved_at bigint
+      )`);
+      await sql.query(`CREATE TABLE IF NOT EXISTS hits (key text NOT NULL, at timestamptz NOT NULL DEFAULT now())`);
+    })().catch(err => { ready = null; throw err; });
   }
-  return out;
-}
-
-function parse(raw) {
-  try { return JSON.parse(raw); } catch { return null; }
+  await ready;
+  return sql.query(text, params);
 }
 
 const text = (v, n) => (typeof v === "string" ? v.trim().slice(0, n) : "");
@@ -51,13 +46,18 @@ function cleanRecipe(b = {}) {
   };
 }
 
-const clientIp = req => String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() || "unknown";
+// Visitors are counted by a hash of their IP address, never the address itself.
+const visitor = req => crypto.createHash("sha256")
+  .update(String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() || "unknown").digest("hex").slice(0, 32);
 
-// Counts hits on a key for a time window. Returns the new count.
-async function hit(key, seconds) {
-  const n = await redis("INCR", key);
-  if (n === 1) await redis("EXPIRE", key, seconds);
-  return n;
+// How many times this key was recorded in the last hour.
+async function recentHits(key) {
+  const rows = await query(`SELECT count(*)::int AS n FROM hits WHERE key = $1 AND at > now() - interval '1 hour'`, [key]);
+  return rows[0].n;
+}
+async function recordHit(key) {
+  await query(`INSERT INTO hits (key) VALUES ($1)`, [key]);
+  if (Math.random() < 0.05) await query(`DELETE FROM hits WHERE at < now() - interval '1 day'`);
 }
 
 // Compares hashes so the check takes the same time whatever was typed. Not case-sensitive.
@@ -68,4 +68,6 @@ function codeMatches(given) {
   return crypto.timingSafeEqual(h(given), h(want));
 }
 
-module.exports = { configured, redis, hashValues, parse, cleanRecipe, clientIp, hit, codeMatches, ID };
+const recipeRow = r => ({ ...r.data, id: r.id, at: Number(r.created_at), approvedAt: r.approved_at && Number(r.approved_at) });
+
+module.exports = { configured, query, cleanRecipe, visitor, recentHits, recordHit, codeMatches, recipeRow, ID };
