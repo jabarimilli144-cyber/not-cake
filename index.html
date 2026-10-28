@@ -310,7 +310,7 @@ footer { padding-block: 1rem 3rem; }
   <div class="panel-head">
     <div class="label">Recipe chat</div>
     <h2 id="chat-title">Ask for a recipe</h2>
-    <p>Say what mix you have and what you're craving. It checks the recipes already here, then writes a new one. Like it? Send it for approval, and it joins the site once it's approved.</p>
+    <p id="chat-intro">Say what mix you have or what you're craving, and it finds the recipes on the site that fit.</p>
   </div>
   <div class="panel chat">
     <div class="chat-log" id="chat-log" aria-live="polite">
@@ -617,6 +617,16 @@ function loadMine() {
   renderMine(mine.map(m => ({ ...m, status: live.has(m.id) ? "approved" : "pending" })));
 }
 async function sendForApproval(recipe, source) {
+  if (ON_CLAUDE) {
+    if (!db || !uid) throw { message: "Sign in to claude.ai and open this page from its link to send suggestions.", status: 400 };
+    const rid = "r" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    const ref = db.doc("pending/" + uid);
+    const full = { ...recipe, status: "pending", at: Date.now() };
+    const snap = await ref.get();
+    if (snap.exists) await ref.update({ items: { [rid]: full } });
+    else await ref.set({ items: { [rid]: full } });
+    return;
+  }
   const d = await api("submit", { recipe, source, website: $("f-website").value });
   mine = [{ id: d.id, name: recipe.name, at: Date.now() }, ...mine.filter(m => m.id !== d.id)].slice(0, 20);
   store("local", "notcake-mine", JSON.stringify(mine));
@@ -643,16 +653,7 @@ $("suggest-form").addEventListener("submit", async e => {
 
   $("f-submit").disabled = true; msg("f-msg", "Sending…");
   try {
-    if (ON_CLAUDE) {
-      const rid = "r" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-      const ref = db.doc("pending/" + uid);
-      const full = { ...item, status: "pending", at: Date.now() };
-      const snap = await ref.get();
-      if (snap.exists) await ref.update({ items: { [rid]: full } });
-      else await ref.set({ items: { [rid]: full } });
-    } else {
-      await sendForApproval(item, "form");
-    }
+    await sendForApproval(item, "form");
     $("suggest-form").reset();
     msg("f-msg", "Sent. It's waiting for review.", "ok");
   } catch (err) {
@@ -660,16 +661,20 @@ $("suggest-form").addEventListener("submit", async e => {
   } finally { $("f-submit").disabled = false; }
 });
 
-/* Recipe chat (Vercel only) */
-const chatTurns = []; // [{role, content}] sent to the server for follow-ups like "make it chocolate"
+/* Recipe chat */
+// Always searches the recipes already on the site. It also writes new ones when a generator is
+// available: Claude through claude.ai on the artifact, or this site's /api/generate on Vercel.
+const chatTurns = []; // [{role, content}] sent with follow-ups like "make it chocolate"
 let chatRecipes = [];  // recipes the chat wrote, by index
+let generator = null;  // async turns => {reply, recipe}
+let canSubmit = false;
 const STOP = new Set("the and for with that this some want make made something like using use have just any can you what from into out are was not but".split(" "));
 function findExisting(q) {
   const words = q.toLowerCase().match(/[a-z]{3,}/g)?.filter(w => !STOP.has(w)) || [];
   if (!words.length) return [];
   return [...RECIPES, ...community]
     .map(r => {
-      const hay = [r.name, r.blurb, FLAVORS[r.flavor], TYPES[r.type], ...r.ing].join(" ").toLowerCase();
+      const hay = [r.name, r.blurb, r.temp, FLAVORS[r.flavor], TYPES[r.type], ...r.ing].join(" ").toLowerCase();
       return { r, score: words.filter(w => hay.includes(w.replace(/s$/, ""))).length };
     })
     .filter(x => x.score > 0).sort((a, b) => b.score - a.score).slice(0, 3).map(x => x.r);
@@ -682,6 +687,29 @@ function bubble(role, html) {
   el.scrollIntoView({ block: "nearest" });
   return el;
 }
+function setChatMode(writes) {
+  $("chat-intro").textContent = writes
+    ? "Say what mix you have and what you're craving. It checks the recipes already here, then writes a new one. Like it? Send it for approval, and it joins the site once it's approved."
+    : "Say what mix you have or what you're craving, and it finds the recipes on the site that fit.";
+}
+
+const CHAT_PROMPT = `You write recipes for Not Cake, a site of recipes that start from a box of cake mix or brownie mix and turn into anything except a cake: cookies, bars, breakfast, no-bake treats, cobblers and so on.
+
+Write one recipe that fits the request below. It must use a boxed cake mix or brownie mix as a main ingredient and must not be a cake or cupcakes. Assume a standard 15.25 oz cake mix box, US measurements and Fahrenheit, and real quantities, times and temperatures a home cook can follow. If raw mix is eaten without baking, include heat-treating it to 160 °F.
+
+Reply with only this JSON:
+{"reply": "one or two friendly sentences to the person, not repeating the recipe",
+ "recipe": {"name": "", "flavor": "${Object.keys(FLAVORS).join("|")}", "type": "cookies|bars|breakfast|nobake|dessert",
+  "time": "25 min", "yield": "24 cookies", "temp": "350 °F or No oven", "blurb": "one sentence",
+  "ing": ["one ingredient per item"], "steps": ["one step per item"], "tip": "one short tip"}}
+If the request isn't for food or asks for something unsafe, set "recipe" to null and say in "reply" what you can help with.
+
+Request:`;
+function fromModel(out) {
+  const r = out && out.recipe ? clean(out.recipe, "") : null;
+  return { reply: str(out && out.reply, 600), recipe: r && r.ing.length && r.steps.length ? { ...r, community: false } : null };
+}
+
 async function ask(q) {
   q = q.trim().slice(0, 300);
   if (!q) return;
@@ -692,22 +720,32 @@ async function ask(q) {
 
   const found = findExisting(q);
   if (found.length) {
-    bubble("bot", `<p class="small">Already on the site:</p><div class="found">${found.map(r =>
+    bubble("bot", `<p class="small">${generator ? "Already on the site:" : "These recipes on the site fit:"}</p><div class="found">${found.map(r =>
       `<button class="mini" type="button" data-find="${esc(r.name)}">${esc(r.name)}</button>`).join("")}</div>`);
+  }
+  if (!generator) {
+    if (!found.length) bubble("bot", `<p>Nothing on the site matches that yet. Try a flavor like lemon or chocolate, or a type like cookies, breakfast or no oven.</p>`);
+    chatTurns.pop();
+    return;
   }
   const wait = bubble("bot", `<p class="small typing">Writing a recipe…</p>`);
   $("chat-send").disabled = true;
   try {
-    const d = await api("generate", { messages: chatTurns });
+    const d = await generator(chatTurns);
     const i = chatRecipes.push(d.recipe) - 1;
     wait.innerHTML = `<p>${esc(d.reply || "Here's one.")}</p>` + (d.recipe ? cardHTML(d.recipe, `
-      <div class="actions" data-chat="${i}">
+      <div class="actions">
         ${canSubmit ? `<button class="mini approve" type="button" data-send="${i}">Send for approval</button>` : ""}
         <span class="msg"></span>
       </div>`) : "");
-    chatTurns.push({ role: "assistant", content: (d.reply || "") + (d.recipe ? `\n[Recipe: ${d.recipe.name}. ${d.recipe.ing.join("; ")}]` : "") });
+    chatTurns.push({ role: "assistant", content: (d.reply || "Here's one.") + (d.recipe ? `\n[Recipe: ${d.recipe.name}. ${d.recipe.ing.join("; ")}]` : "") });
   } catch (err) {
-    wait.innerHTML = `<p class="err-text">${esc(err.status ? err.message : "Couldn't reach the recipe chat. Check your connection and try again.")}</p>`;
+    wait.innerHTML = `<p class="err-text">${esc(
+      err?.code === "not_granted" ? "Writing recipes needs your OK to use Claude. You can still search the site's recipes."
+      : err?.code === "rate_limited" ? "You've reached your Claude usage limit for now. Try again later."
+      : err?.code === "invalid_json" ? "That answer came back garbled. Try asking again."
+      : err?.status ? err.message : "Couldn't write a recipe right now. Try again.")}</p>`;
+    if (err?.code === "not_granted") { generator = null; setChatMode(false); }
     chatTurns.pop();
   } finally { $("chat-send").disabled = false; }
 }
@@ -720,11 +758,11 @@ $("chat-log").addEventListener("click", async e => {
   const note = b.parentElement.querySelector(".msg");
   b.disabled = true; note.textContent = "Sending…"; note.className = "msg";
   try {
-    await sendForApproval(chatRecipes[b.dataset.send], "chat");
+    const { community: _c, id: _i, ...recipe } = chatRecipes[b.dataset.send];
+    await sendForApproval(recipe, "chat");
     b.remove(); note.textContent = "Sent. It's added once it's approved."; note.className = "msg ok";
   } catch (err) { b.disabled = false; note.textContent = sendError(err); note.className = "msg err"; }
 });
-let canSubmit = false;
 
 /* Owner review (claude.ai only; on Vercel the owner approves from the email) */
 function openReview() {
@@ -798,11 +836,16 @@ $("grid").addEventListener("click", async e => {
 });
 
 if (ON_CLAUDE) {
-  hide("chat"); hideLinks("#chat");
   unlocked = store("session", "notcake-unlocked") === "1";
+  setChatMode(false);
   (async () => {
-    const [d, user] = await Promise.all([cap("db"), cap("user")]);
+    const [d, user, sample] = await Promise.all([cap("db"), cap("user"), cap("sample")]);
     db = d;
+    if (sample) {
+      generator = async turns => fromModel(await sample.json(
+        turns.map((t, i) => (i === 0 ? { ...t, content: CHAT_PROMPT + "\n" + t.content } : t))));
+      setChatMode(true);
+    }
     if (user) {
       owner = await user.isOwner().catch(() => false);
       uid = await user.id().catch(() => null);
@@ -813,13 +856,15 @@ if (ON_CLAUDE) {
       return;
     }
     db.collection("approved").onSnapshot(snap => setCommunity(snap.docs.map(x => ({ ...(x.data() || {}), id: x.id }))), () => {});
+    canSubmit = !!uid;
     if (uid) db.doc("pending/" + uid).onSnapshot(snap => renderMine(Object.values(snap.exists ? (snap.data()?.items || {}) : {})), () => {});
     if (owner) render();
     if (!$("review").hidden && unlocked) showReview();
   })();
   if (location.hash === "#review") openReview();
 } else {
-  hide("owner-link", "review", "chat", "suggest"); hideLinks("#chat"); hideLinks("#suggest");
+  hide("owner-link", "review", "suggest"); hideLinks("#suggest");
+  setChatMode(false);
   // Approved community recipes ship with the site as a plain file.
   fetch("/community.json?v=" + Date.now())
     .then(r => (r.ok ? r.json() : { recipes: [] }))
@@ -828,7 +873,7 @@ if (ON_CLAUDE) {
   // Show the chat and the suggestion form only once the server says they're set up.
   api("health").then(h => {
     canSubmit = !!h.submit;
-    if (h.generate) { $("chat").hidden = false; showLinks("#chat"); }
+    if (h.generate) { generator = turns => api("generate", { messages: turns }); setChatMode(true); }
     if (h.submit) { $("suggest").hidden = false; showLinks("#suggest"); }
   }).catch(() => {});
 }
