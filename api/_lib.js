@@ -5,8 +5,8 @@
 // redeploys the site with it.
 const crypto = require("crypto");
 
-const FLAVORS = ["yellow", "white", "chocolate", "lemon", "spice", "funfetti", "brownie"];
-const TYPES = ["cookies", "bars", "breakfast", "nobake", "dessert"];
+const FLAVORS = ["yellow", "white", "chocolate", "lemon", "spice", "funfetti", "brownie", "cornbread"];
+const TYPES = ["cookies", "bars", "breakfast", "nobake", "dessert", "savory"];
 const REPO = process.env.GITHUB_REPO || "jabarimilli144-cyber/not-cake";
 const FILE = "community.json";
 const LINK_DAYS = 14;
@@ -28,6 +28,7 @@ function recipeProblem(r) {
   if (!r.name) return "Give the recipe a name.";
   if (r.ing.length < 2) return "Add at least two ingredients, one per line.";
   if (!r.steps.length) return "Add the steps, one per line.";
+  if (!r.ing.some(i => /\bmix\b/i.test(i))) return "Not Cake recipes start from a boxed mix. Add it to the ingredients.";
   return null;
 }
 

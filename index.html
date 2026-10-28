@@ -25,7 +25,7 @@
   --glow: #dcc8ff;
   --amber: #ffc46b;        /* city lights on the horizon */
   --horizon: #c6d4c2;      /* last light in the sky */
-  --yellow: #f2b632; --white: #d4cbe6; --chocolate: #a8664a; --lemon: #e4d43a; --spice: #d07a35; --funfetti: #ef7cc0; --brownie: #8a5236;
+  --yellow: #f2b632; --white: #d4cbe6; --chocolate: #a8664a; --lemon: #e4d43a; --spice: #d07a35; --funfetti: #ef7cc0; --brownie: #8a5236; --cornbread: #e0a53a;
   --display: "Instrument Serif", "Iowan Old Style", Georgia, serif;
   --body: "Figtree", system-ui, -apple-system, sans-serif;
   --mono: "DM Mono", ui-monospace, Menlo, monospace;
@@ -274,7 +274,7 @@ footer { padding-block: 1rem 3rem; }
   <div class="inner">
     <div class="label">One box of mix · zero cakes</div>
     <h1>Not <s>cake.</s><br><em>Something else.</em></h1>
-    <p>A box of cake mix is flour, sugar, leavening and flavor already measured out. Turn it into <strong>cookies, bars, waffles, cinnamon rolls, dip and popcorn</strong> instead.</p>
+    <p>A box of cake, brownie or corn muffin mix is flour, sugar, leavening and flavor already measured out. Skip the directions on the back and turn it into <strong>cookies, bars, waffles, cinnamon rolls, dip and popcorn</strong> instead.</p>
     <div class="hero-cta">
       <a class="btn" href="#recipes">Browse <span id="n-recipes">12</span> recipes</a>
       <a class="btn ghost" href="#chat">Ask the recipe chat</a>
@@ -348,7 +348,7 @@ footer { padding-block: 1rem 3rem; }
         <div class="field"><label for="f-temp">Heat</label><input id="f-temp" maxlength="20" placeholder="350 °F"></div>
       </div>
       <div class="field"><label for="f-blurb">One-line description</label><input id="f-blurb" maxlength="160" placeholder="What makes it good, in a sentence"></div>
-      <div class="field"><label for="f-ing">Ingredients</label><textarea id="f-ing" placeholder="1 box yellow cake mix&#10;2 large eggs&#10;8 oz cream cheese"></textarea><small>One per line.</small></div>
+      <div class="field"><label for="f-ing">Ingredients</label><textarea id="f-ing" placeholder="1 box yellow cake mix&#10;2 large eggs&#10;8 oz cream cheese"></textarea><small>One per line. Start from a boxed mix (cake, brownie, corn muffin…) and use it differently than the box says.</small></div>
       <div class="field"><label for="f-steps">Steps</label><textarea id="f-steps" placeholder="Heat oven to 350 °F.&#10;Mix cake mix and eggs…"></textarea><small>One step per line, in order.</small></div>
       <div class="field"><label for="f-tip">Tip (optional)</label><input id="f-tip" maxlength="200"></div>
       <div class="field"><label for="f-by">Your name</label><input id="f-by" maxlength="40" placeholder="Shown on the recipe if it's approved"></div>
@@ -390,13 +390,13 @@ footer { padding-block: 1rem 3rem; }
 </section>
 
 <footer class="inner">
-  <p class="box-note"><b>Box sizes.</b> Recipes assume a standard 15.25&nbsp;oz (432&nbsp;g) box. Some Betty Crocker boxes are now 13.25&nbsp;oz. With those, use about 2 tablespoons less liquid or oil, or add ⅓ cup flour. <b>Raw mix.</b> Like raw flour it can carry bacteria, so the no-bake recipes heat-treat it first: microwave on a plate in 30-second bursts, stirring, until it reaches 160&nbsp;°F (71&nbsp;°C).</p>
+  <p class="box-note"><b>Box sizes.</b> Each recipe names the box it needs. Cake mix recipes assume a standard 15.25&nbsp;oz (432&nbsp;g) box. Some Betty Crocker boxes are now 13.25&nbsp;oz. With those, use about 2 tablespoons less liquid or oil, or add ⅓ cup flour. <b>Raw mix.</b> Like raw flour it can carry bacteria, so the no-bake recipes heat-treat it first: microwave on a plate in 30-second bursts, stirring, until it reaches 160&nbsp;°F (71&nbsp;°C).</p>
   <button class="owner-link" id="owner-link" type="button">Owner review</button>
 </footer>
 
 <script>
-const FLAVORS = { yellow: "Yellow", white: "White", chocolate: "Chocolate", lemon: "Lemon", spice: "Spice", funfetti: "Funfetti", brownie: "Brownie" };
-const TYPES = { cookies: "Cookies", bars: "Bars", breakfast: "Breakfast", nobake: "No-bake", dessert: "Desserts" };
+const FLAVORS = { yellow: "Yellow", white: "White", chocolate: "Chocolate", lemon: "Lemon", spice: "Spice", funfetti: "Funfetti", brownie: "Brownie", cornbread: "Corn muffin" };
+const TYPES = { cookies: "Cookies", bars: "Bars", breakfast: "Breakfast", nobake: "No-bake", dessert: "Desserts", savory: "Savory" };
 
 const RECIPES = [
   { name: "Three-Ingredient Cake Mix Cookies", flavor: "yellow", type: "cookies", time: "20 min", yield: "24 cookies", temp: "350 °F",
@@ -439,6 +439,16 @@ const RECIPES = [
     ing: ["1 cup brownie mix", "1 cup all-purpose flour", "2 tsp baking powder", "1 large egg", "1 cup milk", "2 tbsp melted butter", "½ cup chocolate chips (optional)"],
     steps: ["Whisk brownie mix, flour and baking powder.", "Add egg, milk and butter; stir until just combined. Fold in chips.", "Pour ¼-cup portions onto a buttered griddle over medium-low heat.", "Flip when the edges look set and bubbles form, about 2–3 minutes per side."],
     tip: "Keep the heat low. Chocolate scorches before the middle cooks." },
+  { name: "Brownie Mix Crinkle Cookies", flavor: "brownie", type: "cookies", time: "25 min", yield: "24 cookies", temp: "350 °F",
+    blurb: "Fudgy brownie-mix cookies with a crackly powdered-sugar top. One egg instead of the box's brownie batter.",
+    ing: ["1 box (18 oz) fudge brownie mix", "1 large egg", "⅓ cup vegetable oil", "2 tbsp all-purpose flour", "½ cup powdered sugar, for rolling"],
+    steps: ["Heat oven to 350 °F and line two sheets with parchment.", "Stir brownie mix, egg, oil and flour into a thick dough. Chill 15 minutes if it's sticky.", "Roll into 1-inch balls and coat heavily in powdered sugar.", "Bake 9–11 minutes, until the tops crack. Cool 5 minutes on the sheet."],
+    tip: "Underbake slightly. They firm up as they cool." },
+  { name: "Corn Muffin Mix Corn Casserole", flavor: "cornbread", type: "savory", time: "1 hr", yield: "8 servings", temp: "350 °F",
+    blurb: "Spoonable, creamy corn pudding from a box of corn muffin mix. A potluck classic.",
+    ing: ["1 box (8.5 oz) corn muffin mix", "1 can (15 oz) whole kernel corn, drained", "1 can (14.75 oz) cream-style corn", "1 cup sour cream", "½ cup butter, melted"],
+    steps: ["Heat oven to 350 °F and grease a 9×9 or 2-quart baking dish.", "Stir all the ingredients together until combined.", "Pour into the dish and spread evenly.", "Bake 45–55 minutes, until golden and set in the middle. Rest 10 minutes before serving."],
+    tip: "Stir in a handful of shredded cheddar and chopped jalapeño for a kick." },
   { name: "Cake Mix Cinnamon Rolls", flavor: "yellow", type: "breakfast", time: "3 hr", yield: "24 rolls", temp: "350 °F",
     blurb: "The mix makes a rich, tender yeast dough. Big batch.",
     ing: ["1 box yellow cake mix", "5 cups all-purpose flour", "2 packets (4½ tsp) instant yeast", "2½ cups warm water (110 °F)", "½ cup softened butter, 1 cup brown sugar, 2 tbsp cinnamon for filling"],
@@ -553,6 +563,8 @@ const MIXES = [
     note: "Slightly denser crumb. A good pick for cookies and lemon crinkles.", q: "Duncan Hines cake mix", stores: ["heb", "wmt", "amz"] },
   { brand: "Pillsbury Moist Supreme", size: "15.25 oz", boxes: ["funfetti", "yellow", "white"],
     note: "Pillsbury started Funfetti, so this is the box for the waffles, dip and popcorn.", q: "Pillsbury Funfetti cake mix", stores: ["heb", "wmt", "amz"] },
+  { brand: "Jiffy Corn Muffin Mix", size: "8.5 oz", boxes: ["cornbread", "cornbread"],
+    note: "The little blue-and-white box. Cheap, everywhere, and the base for corn casserole.", q: "Jiffy corn muffin mix", stores: ["heb", "wmt", "amz"] },
   { brand: "Great Value", size: "15.25 oz", boxes: ["spice", "yellow", "chocolate"],
     note: "Walmart's store brand and usually the cheapest box. Fine for bars, cobbler and muffins.", q: "Great Value cake mix", stores: ["wmt"] },
 ];
@@ -649,6 +661,7 @@ $("suggest-form").addEventListener("submit", async e => {
   if (!item.name) return msg("f-msg", "Give the recipe a name.", "err"), $("f-name").focus();
   if (item.ing.length < 2) return msg("f-msg", "Add at least two ingredients, one per line.", "err"), $("f-ing").focus();
   if (!item.steps.length) return msg("f-msg", "Add the steps, one per line.", "err"), $("f-steps").focus();
+  if (!item.ing.some(i => /\bmix\b/i.test(i))) return msg("f-msg", "Not Cake recipes start from a boxed mix. Add it to the ingredients, like \"1 box yellow cake mix\".", "err"), $("f-ing").focus();
   if (ON_CLAUDE && (!db || !uid)) return msg("f-msg", "Sign in to claude.ai and open this page from its link to send suggestions.", "err");
 
   $("f-submit").disabled = true; msg("f-msg", "Sending…");
@@ -693,13 +706,16 @@ function setChatMode(writes) {
     : "Say what mix you have or what you're craving, and it finds the recipes on the site that fit.";
 }
 
-const CHAT_PROMPT = `You write recipes for Not Cake, a site of recipes that start from a box of cake mix or brownie mix and turn into anything except a cake: cookies, bars, breakfast, no-bake treats, cobblers and so on.
+const CHAT_PROMPT = `You write recipes for Not Cake, a site of easy recipes that start from a boxed baking mix (cake mix, brownie mix, corn muffin mix and the like) and use it differently than the box's own directions say.
 
-Write one recipe that fits the request below. It must use a boxed cake mix or brownie mix as a main ingredient and must not be a cake or cupcakes. Assume a standard 15.25 oz cake mix box, US measurements and Fahrenheit, and real quantities, times and temperatures a home cook can follow. If raw mix is eaten without baking, include heat-treating it to 160 °F.
+Write one recipe that fits the request below. Rules:
+- A boxed mix must be a main ingredient. Name it with its box size, like "1 box (15.25 oz) yellow cake mix", "1 box (18 oz) brownie mix" or "1 box (8.5 oz) corn muffin mix".
+- Don't follow the box's directions or make what the box makes: no cake, cupcakes, plain brownies, plain muffins or plain cornbread. Change the method, the add-ins or the shape so it becomes something else.
+- Use US measurements and Fahrenheit, and real quantities, times and temperatures a home cook can follow. If raw mix is eaten without baking, include heat-treating it to 160 °F.
 
 Reply with only this JSON:
 {"reply": "one or two friendly sentences to the person, not repeating the recipe",
- "recipe": {"name": "", "flavor": "${Object.keys(FLAVORS).join("|")}", "type": "cookies|bars|breakfast|nobake|dessert",
+ "recipe": {"name": "", "flavor": "${Object.keys(FLAVORS).join("|")}", "type": "${Object.keys(TYPES).join("|")}",
   "time": "25 min", "yield": "24 cookies", "temp": "350 °F or No oven", "blurb": "one sentence",
   "ing": ["one ingredient per item"], "steps": ["one step per item"], "tip": "one short tip"}}
 If the request isn't for food or asks for something unsafe, set "recipe" to null and say in "reply" what you can help with.
