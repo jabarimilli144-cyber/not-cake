@@ -251,8 +251,6 @@ button.btn:disabled { opacity: .5; cursor: default; }
 @media (prefers-reduced-motion: no-preference) { .typing { animation: breathe 1.4s ease-in-out infinite; } }
 @keyframes breathe { 50% { opacity: .45; } }
 .err-text { color: #ffa3b1; }
-.card-img { width: 100%; max-width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 10px; }
-a.mini { text-decoration: none; display: inline-block; }
 .chat-ideas { display: flex; flex-wrap: wrap; gap: .45rem; }
 .chat-form { display: flex; gap: .6rem; }
 .chat-form input { flex: 1 1 auto; min-width: 0; font: 400 1rem/1.4 var(--body); color: var(--ink); background: var(--haze);
@@ -509,8 +507,7 @@ let db = null, uid = null, owner = false, unlocked = false, reviewSub = null, pe
 function cardHTML(r, actions = "") {
   return `
     <article class="card" style="--flavor:var(--${r.flavor})">
-      ${r.img ? `<img class="card-img" src="${esc(r.img)}" alt="" loading="lazy" width="250" height="250">` : ""}
-      <div class="meta"><span class="label">${r.online ? "Online recipe" : FLAVORS[r.flavor] + " mix"}</span><span class="label">${TYPES[r.type]}</span></div>
+      <div class="meta"><span class="label">${FLAVORS[r.flavor]} mix</span><span class="label">${TYPES[r.type]}</span></div>
       ${r.community ? `<span class="badge">Community recipe${r.by ? ` · from ${esc(r.by)}` : ""}</span>` : ""}
       <h3>${esc(r.name)}</h3>
       ${r.blurb ? `<p class="blurb">${esc(r.blurb)}</p>` : ""}
@@ -692,8 +689,8 @@ function bubble(role, html) {
 }
 function setChatMode(writes) {
   $("chat-intro").textContent = writes
-    ? "Say what you're craving. It checks this site and an online recipe database of non-cake desserts, then writes a new cake-mix recipe. Like one? Send it for approval, and it joins the site once it's approved."
-    : "Say what you're craving, and it finds recipes on this site plus non-cake desserts from an online recipe database.";
+    ? "Say what mix you have and what you're craving. It checks the recipes already here, then writes a new one. Like it? Send it for approval, and it joins the site once it's approved."
+    : "Say what mix you have or what you're craving, and it finds the recipes on the site that fit.";
 }
 
 const CHAT_PROMPT = `You write recipes for Not Cake, a site of recipes that start from a box of cake mix or brownie mix and turn into anything except a cake: cookies, bars, breakfast, no-bake treats, cobblers and so on.
@@ -713,67 +710,6 @@ function fromModel(out) {
   return { reply: str(out && out.reply, 600), recipe: r && r.ing.length && r.steps.length ? { ...r, community: false } : null };
 }
 
-/* Online recipe database (TheMealDB). Free, and it allows browsers to call it directly.
-   claude.ai artifacts can't reach other sites, so there the page searches mealdb.json,
-   a copy of its non-cake desserts published alongside the page. */
-const MEALDB = "https://www.themealdb.com/api/json/v1/1/";
-const CAKE = /cake|cheesecake|cheescake|gateau|gâteau|kake|taart|torte|bundt|lamington|battenberg|parkin|cupcake|friand|madeleine|sponge/i;
-const getMeals = path => fetch(MEALDB + path).then(r => r.json()).then(d => d.meals || []);
-let dessertList = null;
-const desserts = () => (dessertList ||= getMeals("filter.php?c=Dessert").then(ms => ms.filter(m => !CAKE.test(m.strMeal))));
-let mealCopy = null;
-const savedMeals = () => (mealCopy ||= fetch("mealdb.json").then(r => r.json()).catch(() => []));
-
-function fromMeal(m) {
-  const ing = [];
-  for (let i = 1; i <= 20; i++) {
-    const name = (m["strIngredient" + i] || "").trim();
-    if (name) ing.push(`${(m["strMeasure" + i] || "").trim()} ${name}`.trim());
-  }
-  let steps = (m.strInstructions || "").split(/\r?\n+/).map(t => t.replace(/^(step\s*\d+[:.]?|\d+[.)])\s*/i, "").trim()).filter(t => t.length > 3);
-  if (steps.length < 2) steps = steps.join(" ").split(/(?<=\.)\s+(?=[A-Z])/).filter(Boolean);
-  const all = [m.strMeal, ...ing].join(" ").toLowerCase();
-  const name = m.strMeal.toLowerCase();
-  return {
-    id: "mdb" + m.idMeal, online: true, name: str(m.strMeal, 80),
-    flavor: /chocolate|cocoa/.test(all) ? "chocolate" : /lemon|lime/.test(all) ? "lemon" : /cinnamon|ginger|nutmeg|spice/.test(all) ? "spice" : "white",
-    type: /cookie|biscuit|alfajor/.test(name) ? "cookies" : /bar|square|brownie|flapjack|fudge/.test(name) ? "bars"
-      : /pancake|waffle|bun|doughnut|donut/.test(name) ? "breakfast" : /ice cream|mousse|fool|mess|truffle|smoothie|no-churn/.test(name) ? "nobake" : "dessert",
-    time: "—", yield: "—", temp: /oven|bake/i.test(m.strInstructions || "") ? "Oven" : "No oven",
-    blurb: `${m.strArea && m.strArea !== "Unknown" ? m.strArea + " dessert" : "A dessert"} from TheMealDB, an online recipe database.`,
-    ing: ing.slice(0, 30), steps: steps.map(t => str(t, 1200)).slice(0, 30), tip: "", by: "TheMealDB",
-    img: !ON_CLAUDE && /^https:\/\/www\.themealdb\.com\//.test(m.strMealThumb || "") ? m.strMealThumb + "/preview" : "",
-    source: /^https?:\/\//.test(m.strSource || "") ? m.strSource : `https://www.themealdb.com/meal/${m.idMeal}`,
-  };
-}
-
-// Best non-cake desserts for a request: by dish name, plus by main ingredient (e.g. "lemon").
-async function searchOnline(q) {
-  const words = q.toLowerCase().match(/[a-z]{3,}/g)?.filter(w => !STOP.has(w)) || [];
-  if (!words.length) return [];
-  if (ON_CLAUDE) {
-    const scored = (await savedMeals()).filter(m => !CAKE.test(m.strMeal)).map(m => {
-      const name = m.strMeal.toLowerCase();
-      const ing = Object.keys(m).filter(k => k.startsWith("strIngredient")).map(k => m[k]).join(" ").toLowerCase();
-      const stem = w => w.replace(/s$/, "");
-      return { m, n: words.filter(w => name.includes(stem(w))).length * 2 + words.filter(w => ing.includes(stem(w))).length };
-    }).filter(x => x.n > 0).sort((a, b) => b.n - a.n).slice(0, 3);
-    return scored.map(x => fromMeal(x.m)).filter(r => r.ing.length && r.steps.length);
-  }
-  const list = await desserts();
-  const ok = new Set(list.map(m => m.idMeal));
-  const score = new Map();
-  for (const m of list) {
-    const n = words.filter(w => m.strMeal.toLowerCase().includes(w.replace(/s$/, ""))).length;
-    if (n) score.set(m.idMeal, n * 2);
-  }
-  const byIngredient = await Promise.all(words.slice(0, 3).map(w => getMeals("filter.php?i=" + encodeURIComponent(w)).catch(() => [])));
-  byIngredient.flat().forEach(m => { if (ok.has(m.idMeal)) score.set(m.idMeal, (score.get(m.idMeal) || 0) + 1); });
-  const top = [...score].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([id]) => id);
-  const meals = await Promise.all(top.map(id => getMeals("lookup.php?i=" + id).then(ms => ms[0]).catch(() => null)));
-  return meals.filter(Boolean).map(fromMeal).filter(r => r.ing.length && r.steps.length);
-}
-
 async function ask(q) {
   q = q.trim().slice(0, 300);
   if (!q) return;
@@ -787,22 +723,8 @@ async function ask(q) {
     bubble("bot", `<p class="small">${generator ? "Already on the site:" : "These recipes on the site fit:"}</p><div class="found">${found.map(r =>
       `<button class="mini" type="button" data-find="${esc(r.name)}">${esc(r.name)}</button>`).join("")}</div>`);
   }
-  let online = [];
-  {
-    const wait = bubble("bot", `<p class="small typing">Checking the online recipe database…</p>`);
-    online = await searchOnline(q).catch(() => []);
-    if (online.length) {
-      wait.innerHTML = `<p class="small">From the online recipe database (TheMealDB), no cakes:</p>` + online.map(r => {
-        const i = chatRecipes.push(r) - 1;
-        return cardHTML(r, `<div class="actions">
-          <a class="mini" href="${esc(r.source)}" target="_blank" rel="noopener">View original ↗</a>
-          ${canSubmit ? `<button class="mini approve" type="button" data-send="${i}">Send for approval</button>` : ""}
-          <span class="msg"></span></div>`);
-      }).join("");
-    } else wait.remove();
-  }
   if (!generator) {
-    if (!found.length && !online.length) bubble("bot", `<p>Nothing on the site matches that yet. Try a flavor like lemon or chocolate, or a type like cookies, breakfast or no oven.</p>`);
+    if (!found.length) bubble("bot", `<p>Nothing on the site matches that yet. Try a flavor like lemon or chocolate, or a type like cookies, breakfast or no oven.</p>`);
     chatTurns.pop();
     return;
   }
@@ -836,7 +758,7 @@ $("chat-log").addEventListener("click", async e => {
   const note = b.parentElement.querySelector(".msg");
   b.disabled = true; note.textContent = "Sending…"; note.className = "msg";
   try {
-    const { community: _c, id: _i, online: _o, img: _m, source: _s, ...recipe } = chatRecipes[b.dataset.send];
+    const { community: _c, id: _i, ...recipe } = chatRecipes[b.dataset.send];
     await sendForApproval(recipe, "chat");
     b.remove(); note.textContent = "Sent. It's added once it's approved."; note.className = "msg ok";
   } catch (err) { b.disabled = false; note.textContent = sendError(err); note.className = "msg err"; }
